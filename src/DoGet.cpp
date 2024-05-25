@@ -20,7 +20,7 @@ class ServerConfig {
     std::map<std::string, attributes> locations;
 };
 
-class Config {
+class Configuration {
   public:
     std::vector<ServerConfig> servers;
 };
@@ -39,13 +39,13 @@ ServerConfig makeServerConfig() {
     return serverConfig;
 }
 
-Config makeConfig() {
-    Config config;
+Configuration makeConfig() {
+    Configuration config;
     config.servers.push_back(makeServerConfig());
     return config;
 }
 
-Config config = makeConfig();
+Configuration config = makeConfig();
 
 ServerConfig getServerConfig(const std::string& host) {
     std::vector<ServerConfig> servers = config.servers;
