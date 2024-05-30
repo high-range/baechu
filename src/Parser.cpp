@@ -65,7 +65,7 @@ void Parser::startLineTokenize(std::string& requestMessage,
 }  // Startline tokenization
 
 void Parser::startLineSyntaxCheck(const RequestData& requestData) {
-    for (int i = 0; i < requestData.startLine.method.length(); i++) {
+    for (size_t i = 0; i < requestData.startLine.method.length(); i++) {
         if (!isTchar(requestData.startLine.method[i])) {
             throw std::vector<std::pair<int, std::string> >(
                 1, std::make_pair(400, "Bad Request"));
@@ -146,7 +146,6 @@ void Parser::headerTokenize(std::string& requestMessage,
                 } else if (isWS(input)) {
                     begin++;
                 } else {
-                    std::cout << fieldValue << std::endl;
                     state = SecondFieldContent;
                 }
                 break;

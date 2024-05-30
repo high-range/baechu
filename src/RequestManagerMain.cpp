@@ -17,11 +17,14 @@ int main(void) {
         "cross-site\r\nSec-Fetch-Mode: navigate\r\nSec-Fetch-User: "
         "?1\r\nSec-Fetch-Dest: document\r\nAccept-Encoding: gzip, deflate, br, "
         "zstd\r\nAccept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7\r\n\r\n";
+    // HTTP request message
+
     std::vector<std::pair<int, std::string> > statusData;
+    // statusData 는 status code 와 message 를 저장하는 vector
 
     statusData = RequestManager::parse(requestMessage, requestData);
     // 파싱 과정중 에러가 발생하면 vector 에 status code 와 message 가 저장되어
-    // 반환됨 정상 동작시 status code 0 과 OK 가 저장되어 반환됨
+    // 반환됨 정상 동작시 status code 0 과 "OK" 가 저장되어 반환됨
 
     std::cout << requestData.getMethod() << std::endl;
     std::cout << requestData.getPath() << std::endl;
@@ -29,6 +32,9 @@ int main(void) {
     std::map<std::string, std::vector<std::string> >::iterator it;
     std::map<std::string, std::vector<std::string> > myMap =
         requestData.getHeader();
+    // requestData에서 getter를 통해 필요한 데이터를 가져옴
+    // header는 map<string, vector<string>> 형태로 저장되어 있음
+
     for (it = myMap.begin(); it != myMap.end(); ++it) {
         std::cout << "Key: " << it->first << "\n";
         for (size_t i = 0; i < it->second.size(); ++i) {
@@ -36,6 +42,5 @@ int main(void) {
         }
         std::cout << "\n";
     }
-    // requestData.getHeader();
-    // requestData.getBody();
+    // header의 key와 value를 출력하는 테스트 코드
 }
