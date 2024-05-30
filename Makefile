@@ -11,6 +11,8 @@ INCLUDES	= src/Configuration.hpp \
 					src/Worker.hpp \
 
 SRCS		= src/main.cpp \
+					src/Configuration.cpp \
+					src/Request.cpp \
 					src/Worker.cpp \
 
 OBJS		= $(SRCS:.cpp=.o)
