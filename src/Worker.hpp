@@ -4,12 +4,9 @@
 
 #include "Request.hpp"
 #include "Response.hpp"
+
 class Worker {
   public:
-    // Worker();
-    // ~Worker();
-    // Worker(const Worker& copy);
-    // Worker& operator=(const Worker& copy);
     Response handleRequest(Request request);
 
   private:
@@ -17,7 +14,11 @@ class Worker {
     bool isStaticRequest(Request request);
     Response handelStaticRequest(Request request);
     Response handleDynamicRequest(Request request);
+
     void doGet(Request request);
+
     void doPost(Request request);
+    bool saveFile(const std::string& path, const std::string& content);
+
     void doDelete(Request request);
 };

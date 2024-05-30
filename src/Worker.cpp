@@ -3,30 +3,13 @@
 #include <sys/stat.h>
 
 #include <cstdio>
+#include <ctime>
 #include <fstream>
 #include <iostream>
 
 #include "Configuration.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
-
-/*
-Worker::Worker() {
-    // Constructor
-}
-
-Worker::~Worker() {
-    // Destructor
-}
-
-Worker::Worker(const Worker& copy) {
-    // Copy constructor
-}
-
-Worker& Worker::operator=(const Worker& copy) {
-    // Copy assignment operator
-}
-*/
 
 std::string Worker::getPath(Request request) {
     // Get path
@@ -61,13 +44,41 @@ void Worker::doGet(Request request) {
     std::string path = getPath(request);
 }
 
-void Worker::doPost(Request request) {
-    std::string path = getPath(request);
+std::string generate_unique_filename() {
+    // Get the current time since epoch
+    std::time_t now = std::time(0);
+
+    std::srand(std::time(0));
+    int random_number =
+        std::rand() % 9000 + 1;  // Generate a random number between 1 and 9000
+
+    // Combine time and random number to create a unique filename
+    std::string filename = "saved_file_" + std::to_string(now) + "_" +
+                           std::to_string(random_number) + ".html";
+
+    return filename;
+}
+
+bool Worker::saveFile(const std::string& dir, const std::string& content) {
+    std::string filename = generate_unique_filename();
+    std::string path = dir + "/" + filename;
     std::ofstream file(path);
     if (file.is_open()) {
-        file << request.getBody();  // Write the request body to the file
+        file << content;
         file.close();
-        return;  // Return 201 if successful
+        return true;
+    } else {
+        std::cerr << "Error opening file for writing" << std::endl;
+        return false;
+    }
+}
+
+void Worker::doPost(Request request) {
+    std::string dir = getPath(request);
+    std::string content = request.getBody();
+
+    if (saveFile(dir, content)) {
+        return;  // Return 201 Created if successful
     } else {
         return;  // Return 500 Internal Server Error
     }
@@ -92,6 +103,6 @@ Response Worker::handleRequest(Request request) {
     if (isStaticRequest(request)) {
         return handelStaticRequest(request);
     } else {
-        return handleDynamicRequest(request);
+        // return handleDynamicRequest(request);
     }
 }
