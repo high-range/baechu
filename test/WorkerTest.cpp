@@ -1,6 +1,5 @@
 #include <iostream>
 
-#include "Configuration.hpp"
 #include "Request.hpp"
 #include "Worker.hpp"
 

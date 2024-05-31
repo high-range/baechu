@@ -5,18 +5,16 @@ AR			= ar
 ARFLAGS		= rs
 ARFILE		= webserv.a
 
-INCLUDES	= src/Configuration.hpp \
-					src/Request.hpp \
-					src/Response.hpp \
-					src/Worker.hpp \
+INCLUDES_HEADER  = -I src
 
-SRCS		= src/main.cpp \
-					src/Configuration.cpp \
+SRCS		= src/Configuration.cpp \
 					src/Request.cpp \
 					src/Response.cpp \
 					src/Worker.cpp \
 
-OBJS		= $(SRCS:.cpp=.o)
+MAIN		= test/WorkerTest.cpp
+
+OBJS		= $(SRCS:.cpp=.o) $(MAIN:.cpp=.o)
 
 all: $(NAME)
 
@@ -27,7 +25,7 @@ $(ARFILE): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $^
 
 %.o: %.cpp
-	$(CC) $(CCFLAGS) -c $^ -o $@
+	$(CC) $(CCFLAGS) $(INCLUDES_HEADER) -c $^ -o $@
 
 clean:
 	$(RM) $(OBJS) $(ARFILE)

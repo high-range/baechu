@@ -15,8 +15,9 @@
 
 std::string Worker::getFullPath(const std::string& host,
                                 const std::string& path) {
-    Configuration config(host);
-    std::string rootDirectory = config.getRootDirectory();
+    // Configuration config(host);
+    // std::string rootDirectory = config.getRootDirectory();
+    std::string rootDirectory = "/Users/leesiha/42/nginxTest";
     return rootDirectory + path;
 }
 
