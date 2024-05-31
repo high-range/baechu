@@ -13,6 +13,7 @@ INCLUDES	= src/Configuration.hpp \
 SRCS		= src/main.cpp \
 					src/Configuration.cpp \
 					src/Request.cpp \
+					src/Response.cpp \
 					src/Worker.cpp \
 
 OBJS		= $(SRCS:.cpp=.o)

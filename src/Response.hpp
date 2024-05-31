@@ -1,13 +1,15 @@
 #pragma once
 
-#include <iostream>
+#include <string>
 
 class Response {
   public:
-    std::string setStatusCode();
-    std::string setBody();
+    Response(int code, const std::string& content);
+    int getCode() const;
+    std::string getContent() const;
+    std::string toString() const;
 
   private:
-    std::string statusCode;
-    std::string body;
+    int code;
+    std::string content;
 };

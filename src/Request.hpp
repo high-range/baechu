@@ -1,14 +1,14 @@
 #pragma once
 
-#include <iostream>
+#include <string>
 
 class Request {
   public:
-    Request(std::string request);
-    std::string getMethod();
-    std::string getUrl();
-    std::string getHost();
-    std::string getBody();
+    Request(const std::string& message);
+    std::string getMethod() const;
+    std::string getUrl() const;
+    std::string getHost() const;
+    std::string getBody() const;
 
   private:
     std::string method;
