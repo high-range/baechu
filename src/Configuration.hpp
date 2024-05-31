@@ -12,17 +12,18 @@ struct Block {
 };
 
 class Configuration {
-public:
+  public:
     void parseConfigFile(const std::string filename);
-    void printConfig() const; // 파싱 확인 함수 (지워야함)
+    void printConfig() const;  // 파싱 확인 함수 (지워야함)
     void parseBlock(std::ifstream& file, Block& current_block);
 
-	// server_name 으로 port # 가져오기
-	std::string getPortNumber(const std::string server_name) const;
-	// server_name 으로 rootDirectory 가져오기
-	// std::string getRootDirectory(const std::string server_name, const std::string location) const;
+    // server_name 으로 port # 가져오기
+    std::string getPortNumber(const std::string server_name) const;
+    // server_name 으로 rootDirectory 가져오기
+    std::string getRootDirectory(const std::string server_name,
+                                 const std::string location) const;
 
-private:
+  private:
     std::map<std::string, std::string> simple_directives;
     std::vector<Block> blocks;
 };
