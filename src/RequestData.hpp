@@ -21,5 +21,5 @@ class RequestData {
     std::map<std::string, std::vector<std::string> > getHeader() const;
     std::string getBody() const;
 
-    friend class Parser;
+    friend class Request;
 };

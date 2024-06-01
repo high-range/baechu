@@ -12,10 +12,11 @@ std::string Manager::run(std::string requestMessage,
         RequestData requestData;
         std::vector<std::pair<int, std::string> > responseMessageSource;
 
-        Request::MessageParse(requestMessage, requestData, configuration);
+        Request::messageParse(requestMessage, requestData, configuration);
         // responseMessageSource = Worker::run(requestData);
-        return (Response::MessageGenerate(responseMessageSource));
+
+        return (Response::messageGenerate(responseMessageSource));
     } catch (std::vector<std::pair<int, std::string> >& responseMessageSource) {
-        return (Response::MessageGenerate(responseMessageSource));
+        return (Response::messageGenerate(responseMessageSource));
     }
 }
