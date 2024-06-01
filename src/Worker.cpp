@@ -12,6 +12,7 @@
 #include "Configuration.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
+#include "Worker.hpp"
 
 std::string Worker::getFullPath(const std::string& host,
                                 const std::string& path) {

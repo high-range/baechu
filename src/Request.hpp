@@ -1,18 +1,15 @@
 #pragma once
 
-#include <string>
+#include <iostream>
+#include <vector>
+
+class RequestData;
+class Configuration;
 
 class Request {
   public:
-    Request(const std::string& message);
-    std::string getMethod() const;
-    std::string getUrl() const;
-    std::string getHost() const;
-    std::string getBody() const;
-
-  private:
-    std::string method;
-    std::string url;
-    std::string host;
-    std::string body;
+    virtual ~Request() = 0;
+    static std::vector<std::pair<int, std::string> > MessageParse(
+        const std::string& requestMessage, RequestData& requestData,
+        const Configuration& configuration);
 };

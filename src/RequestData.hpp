@@ -1,5 +1,4 @@
-#ifndef REQUESTDATA_HPP
-#define REQUESTDATA_HPP
+#pragma once
 
 #include <map>
 #include <utility>
@@ -24,5 +23,3 @@ class RequestData {
 
     friend class Parser;
 };
-
-#endif
