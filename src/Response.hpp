@@ -1,15 +1,10 @@
 #pragma once
 
-#include <string>
+#include <vector>
 
 class Response {
   public:
-    Response(int code, const std::string& content);
-    int getCode() const;
-    std::string getContent() const;
-    std::string toString() const;
-
-  private:
-    int code;
-    std::string content;
+    virtual ~Response() = 0;
+    static std::string messageGenerate(
+        std::vector<std::pair<int, std::string> > responseMessageSource);
 };
