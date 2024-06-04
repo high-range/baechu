@@ -5,11 +5,6 @@
 
 class RequestData;
 class Configuration;
-#include <iostream>
-#include <vector>
-
-class RequestData;
-class Configuration;
 
 class Request {
   public:
