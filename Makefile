@@ -9,6 +9,7 @@ INCLUDES_HEADER  = -I src
 
 SRCS		= src/Configuration.cpp \
 					src/Request.cpp \
+					src/RequestData.cpp \
 					src/Response.cpp \
 					src/Worker.cpp \
 
