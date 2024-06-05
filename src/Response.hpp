@@ -1,13 +1,10 @@
 #pragma once
 
-#include <iostream>
+#include <vector>
 
 class Response {
   public:
-    std::string setStatusCode();
-    std::string setBody();
-
-  private:
-    std::string statusCode;
-    std::string body;
+    virtual ~Response() = 0;
+    static std::string messageGenerate(
+        std::vector<std::pair<int, std::string> > responseMessageSource);
 };
