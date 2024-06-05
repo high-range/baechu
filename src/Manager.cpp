@@ -12,6 +12,9 @@ std::string Manager::run(std::string requestMessage,
         RequestData requestData;
         std::vector<std::pair<int, std::string> > responseMessageSource;
 
+        if (requestMessage.empty()) {
+            throw;
+        }
         Request::messageParse(requestMessage, requestData, configuration);
         // responseMessageSource = Worker::run(requestData);
 

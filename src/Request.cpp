@@ -12,11 +12,11 @@ void Request::messageParse(std::string& requestMessage,
     std::string fieldvalue;
     char* begin;
     char* end;
-    char input;
+    unsigned char input;
 
-    if (requestMessage.empty()) {
-        throw;
-    }
+    (void)configuration;
+    // test를 위해 임시로 작성
+
     begin = &requestMessage.front();
     end = &requestMessage.back();
     while (begin != end) {
@@ -153,15 +153,17 @@ void Request::messageParse(std::string& requestMessage,
                 begin += 2;
                 state = Body;
                 break;
+            case Body:
+                return;
         }
     }
 }
 
 bool Request::isObsFold(const char* str) { return isCRLF(str) && isWS(str[2]); }
 
-bool Request::isWS(const char c) { return c == ' ' || c == '\t'; }
+bool Request::isWS(const unsigned char c) { return c == ' ' || c == '\t'; }
 
-bool Request::isFieldVchar(const char c) {
+bool Request::isFieldVchar(const unsigned char c) {
     return isgraph(c) || (c >= 128 && c <= 255);
 }
 
@@ -175,7 +177,7 @@ bool Request::isPchar(const char* str) {
         str[0] == '_' || str[0] == '~' || str[0] == ':' || str[0] == '@') {
         return true;
     }  // unreserved, ':', '@' check
-    for (int i = 0; i < subDelims.size(); i++) {
+    for (size_t i = 0; i < subDelims.size(); i++) {
         if (str[0] == subDelims[i]) {
             return true;
         }
@@ -208,7 +210,7 @@ bool Request::isTchar(const char c) {
     if (!isgraph(c) || c == '\"') {
         return false;
     }
-    for (int i = 0; i < delimiter.size(); i++) {
+    for (size_t i = 0; i < delimiter.size(); i++) {
         if (c == delimiter[i]) {
             return false;
         }
@@ -220,29 +222,30 @@ bool Request::isCRLF(const char* str) {
     return str[0] == '\r' && str[1] == '\n';
 }
 
-std::string th_substr(const char* src, const int start, const int end) {
+std::string Request::th_substr(const char* src, const size_t start,
+                               const size_t end) {
     std::string result;
 
     if (start <= end) {
         return result;
     }
-    for (int i = start; i < end; i++) {
+    for (size_t i = start; i < end; i++) {
         result += src[i];
     }
     return result;
 }
 
 std::string Request::th_strtrim(const std::string& src, const char target) {
-    int start = 0;
-    int end = 0;
+    size_t start = 0;
+    size_t end = 0;
 
-    for (int i = 0; i < src.size(); i++) {
+    for (size_t i = 0; i < src.size(); i++) {
         if (src[i] != target) {
             start = i;
             break;
         }
     }
-    for (int i = src.size() - 1; i > -1; i--) {
+    for (size_t i = src.size() - 1; i > -1; i--) {
         if (src[i] != target) {
             end = i;
             break;
