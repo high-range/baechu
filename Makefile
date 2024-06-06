@@ -7,13 +7,15 @@ ARFILE		= webserv.a
 
 INCLUDES_HEADER  = -I src
 
-SRCS		= src/Configuration.cpp \
+SRCS		= src/server/Connector.cpp \
+					src/Configuration.cpp \
+					src/Manager.cpp \
 					src/Request.cpp \
 					src/RequestData.cpp \
 					src/Response.cpp \
 					src/Worker.cpp \
 
-MAIN		= test/WorkerTest.cpp
+MAIN		= test/ConnectionTestServer.cpp
 
 OBJS		= $(SRCS:.cpp=.o) $(MAIN:.cpp=.o)
 

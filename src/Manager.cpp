@@ -13,6 +13,8 @@ std::string Manager::run(std::string requestMessage,
         std::vector<std::pair<int, std::string> > responseMessageSource;
 
         Request::messageParse(requestMessage, requestData, configuration);
+        Worker worker;
+        responseMessageSource = worker.handleRequest(requestData);
         // responseMessageSource = Worker::run(requestData);
 
         return (Response::messageGenerate(responseMessageSource));
