@@ -58,10 +58,19 @@ void Worker::handleDynamicRequest(const RequestData& request) {
 bool isFile(const std::string& fullPath) {
     struct stat statBuffer;
     if (stat(fullPath.c_str(), &statBuffer) != 0) {
-        throw "stat failed";
+        throw std::runtime_error(
+            "stat failed for path: " + fullPath +
+            " with error: " + std::string(strerror(errno)));
     }
 
-    return S_ISREG(statBuffer.st_mode);
+    if (S_ISREG(statBuffer.st_mode)) {
+        return true;  // 일반 파일인 경우 true 반환
+    } else if (S_ISDIR(statBuffer.st_mode)) {
+        return false;  // 디렉토리인 경우 false 반환
+    }
+    throw std::runtime_error(
+        "unknown file type: " +
+        fullPath);  // 알 수 없는 파일 유형인 경우 예외 발생
 }
 
 std::string doGetFile(const std::string& fullPath) {
@@ -116,9 +125,17 @@ std::string doGetDirectory(const std::string& fullPath, const std::string& host,
 std::pair<int, std::string> Worker::doGet(const RequestData& request) {
     std::string host = header.at("Host").front();
     std::string fullPath = getFullPath(host, request.getPath());
-    if (isFile(fullPath)) {
-        return std::make_pair(200, doGetFile(fullPath));
+
+    try {
+        if (isFile(fullPath)) {
+            return std::make_pair(200, doGetFile(fullPath));
+        }
+    } catch (const std::runtime_error& e) {
+        std::cerr << e.what() << std::endl;
+        // 예외가 발생하면 404 Not Found 응답을 반환
+        return std::make_pair(404, "Not Found: " + std::string(e.what()));
     }
+
     return std::make_pair(200,
                           doGetDirectory(fullPath, host, request.getPath()));
 }
