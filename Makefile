@@ -1,6 +1,6 @@
 NAME		= webserv
 CC			= c++
-CFLAGS		= -Wall -Wextra -Werror -std=c++98
+CXXFLAGS	= -Wall -Wextra -Werror -std=c++98
 AR			= ar
 ARFLAGS		= rs
 ARFILE		= webserv.a
@@ -22,13 +22,13 @@ OBJS		= $(SRCS:.cpp=.o) $(MAIN:.cpp=.o)
 all: $(NAME)
 
 $(NAME): $(ARFILE)
-	$(CC) $(CCFLAGS) $^ -o $@
+	$(CC) $(CXXFLAGS) $^ -o $@
 
 $(ARFILE): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $^
 
 %.o: %.cpp
-	$(CC) $(CCFLAGS) $(INCLUDES_HEADER) -c $^ -o $@
+	$(CC) $(CXXFLAGS) $(INCLUDES_HEADER) -c $^ -o $@
 
 clean:
 	$(RM) $(OBJS) $(ARFILE)

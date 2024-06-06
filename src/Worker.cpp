@@ -16,6 +16,7 @@
 
 std::string Worker::getFullPath(const std::string& host,
                                 const std::string& path) {
+    (void)host;
     // Configuration config(host);
     // std::string rootDirectory = config.getRootDirectory();
     std::string rootDirectory = "/Users/leesiha/42/nginxTest";
@@ -43,6 +44,7 @@ ResponseData Worker::handleStaticRequest(const RequestData& request) {
 }
 
 ResponseData Worker::handleDynamicRequest(const RequestData& request) {
+    (void)request;
     return ResponseData(501);
 }
 
