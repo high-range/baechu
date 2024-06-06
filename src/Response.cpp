@@ -1,9 +1,19 @@
 #include "Response.hpp"
 
-std::string Response::messageGenerate(
-    std::vector<std::pair<int, std::string> > responseMessageSource) {
-    std::string response;
-    response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
-    response += "<html><body><h1>Hello, World!</h1></body></html>";
-    return response;
+std::string Response::messageGenerate(ResponseData data) {
+    std::stringstream ss;
+
+    ss << "HTTP/1.1 " << data.statusCode << " "
+       << reasonPhrases[data.statusCode] << "\r\n";
+
+    for (std::map<std::string, std::string>::iterator it = data.headers.begin();
+         it != data.headers.end(); it++) {
+        ss << it->first << ": " << it->second << "\r\n";
+    }
+
+    ss << "\r\n";
+
+    ss << data.body;
+
+    return ss.str();
 }

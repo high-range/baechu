@@ -27,32 +27,23 @@ bool Worker::isStaticRequest(const RequestData& request) {
     return (method == "GET" || method == "POST" || method == "DELETE");
 }
 
-void Worker::handleStaticRequest(const RequestData& request) {
+ResponseData Worker::handleStaticRequest(const RequestData& request) {
     const std::string& method = request.getMethod();
-    std::pair<int, std::string> response;
 
     if (header.find("Host") == header.end()) {
-        response = std::make_pair(400, "");
-    } else {
-        if (method == "GET") {
-            response = doGet(request);
-        } else if (method == "POST") {
-            response = doPost(request);
-        } else if (method == "DELETE") {
-            response = doDelete(request);
-        } else {
-            response = std::make_pair(405, "");
-        }
+        return ResponseData(400);
+    } else if (method == "GET") {
+        return doGet(request);
+    } else if (method == "POST") {
+        return doPost(request);
+    } else if (method == "DELETE") {
+        return doDelete(request);
     }
-
-    // Clear the vector and add the new response
-    value.clear();
-    value.push_back(response);
+    return ResponseData(405);
 }
 
-void Worker::handleDynamicRequest(const RequestData& request) {
-    value.push_back(std::make_pair(501, "Not Implemented"));
-    return;
+ResponseData Worker::handleDynamicRequest(const RequestData& request) {
+    return ResponseData(501);
 }
 
 bool isFile(const std::string& fullPath) {
@@ -122,22 +113,21 @@ std::string doGetDirectory(const std::string& fullPath, const std::string& host,
     return generateHTML(fullPath, host, 8080, path);
 }
 
-std::pair<int, std::string> Worker::doGet(const RequestData& request) {
+ResponseData Worker::doGet(const RequestData& request) {
     std::string host = header.at("Host").front();
     std::string fullPath = getFullPath(host, request.getPath());
 
     try {
         if (isFile(fullPath)) {
-            return std::make_pair(200, doGetFile(fullPath));
+            return ResponseData(200, doGetFile(fullPath));
         }
     } catch (const std::runtime_error& e) {
         std::cerr << e.what() << std::endl;
         // 예외가 발생하면 404 Not Found 응답을 반환
-        return std::make_pair(404, "Not Found: " + std::string(e.what()));
+        return ResponseData(404, "Not Found: " + std::string(e.what()));
     }
 
-    return std::make_pair(200,
-                          doGetDirectory(fullPath, host, request.getPath()));
+    return ResponseData(200, doGetDirectory(fullPath, host, request.getPath()));
 }
 
 std::string generateFilename() {
@@ -163,48 +153,40 @@ bool saveFile(const std::string& dir, const std::string& content) {
     }
 }
 
-std::pair<int, std::string> Worker::doPost(const RequestData& request) {
+ResponseData Worker::doPost(const RequestData& request) {
     std::string host = header.at("Host").front();
     std::string fullPath = getFullPath(host, request.getPath());
     std::string content = request.getBody();
 
     if (saveFile(fullPath, content)) {
-        return std::make_pair(201,
-                              content);  // Return 201 Created if successful
-    } else {
-        return std::make_pair(500, "");
+        return ResponseData(201, content);  // Return 201 Created if successful
     }
+    return ResponseData(500);
 }
 
-std::pair<int, std::string> Worker::doDelete(const RequestData& request) {
+ResponseData Worker::doDelete(const RequestData& request) {
     std::string host = header.at("Host").front();
     std::string fullPath = getFullPath(host, request.getPath());
 
     struct stat buffer;
     if (stat(fullPath.c_str(), &buffer) == 0) {
         if (std::remove(fullPath.c_str()) == 0) {
-            return std::make_pair(204,
-                                  "");  // Return 204 No Content if successful
-        } else {
-            return std::make_pair(500, "");
+            return ResponseData(204);  // Return 204 No Content if successful
         }
-    } else {
-        return std::make_pair(404, "");
+        return ResponseData(500);
     }
+    return ResponseData(404);
 }
 
 void Worker::fetchHeaders(const RequestData& request) {
     header = request.getHeader();
 }
 
-std::vector<std::pair<int, std::string> > Worker::handleRequest(
-    const RequestData& request) {
+ResponseData Worker::handleRequest(const RequestData& request) {
     fetchHeaders(request);
+
     if (isStaticRequest(request)) {
-        handleStaticRequest(request);
-        return value;
-    } else {
-        handleDynamicRequest(request);
-        return value;
+        return handleStaticRequest(request);
     }
+    return handleDynamicRequest(request);
 }
