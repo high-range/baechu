@@ -11,14 +11,14 @@ class RequestData {
         std::string path;
         std::string version;
     } startLine;
-    std::map<std::string, std::vector<std::string> > header;
+    std::map<std::string, std::string> header;
     std::string body;
 
   public:
     std::string getMethod() const;
     std::string getPath() const;
     std::string getVersion() const;
-    std::map<std::string, std::vector<std::string> > getHeader() const;
+    std::map<std::string, std::string> getHeader() const;
     std::string getBody() const;
 
     friend class Request;
