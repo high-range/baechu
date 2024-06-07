@@ -1,10 +1,9 @@
 #pragma once
 
-#include <vector>
+#include "ResponseData.hpp"
 
 class Response {
   public:
     virtual ~Response() = 0;
-    static std::string messageGenerate(
-        std::vector<std::pair<int, std::string> > responseMessageSource);
+    static std::string messageGenerate(ResponseData data);
 };

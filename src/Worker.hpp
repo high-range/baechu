@@ -7,19 +7,17 @@
 
 class Worker {
   public:
-    std::vector<std::pair<int, std::string> > handleRequest(
-        const RequestData& request);
+    ResponseData handleRequest(const RequestData& request);
 
   private:
-    std::vector<std::pair<int, std::string> > value;
     std::map<std::string, std::vector<std::string> > header;  // Response header
 
     bool isStaticRequest(const RequestData& request);
-    void handleStaticRequest(const RequestData& request);
-    void handleDynamicRequest(const RequestData& request);
-    std::pair<int, std::string> doGet(const RequestData& request);
-    std::pair<int, std::string> doPost(const RequestData& request);
-    std::pair<int, std::string> doDelete(const RequestData& request);
+    ResponseData handleStaticRequest(const RequestData& request);
+    ResponseData handleDynamicRequest(const RequestData& request);
+    ResponseData doGet(const RequestData& request);
+    ResponseData doPost(const RequestData& request);
+    ResponseData doDelete(const RequestData& request);
     void fetchHeaders(const RequestData& request);
     std::string getFullPath(const std::string& host, const std::string& path);
 };
