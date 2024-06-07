@@ -2,22 +2,24 @@
 
 #include <string>
 
-#include "Request.hpp"
+#include "RequestData.hpp"
 #include "Response.hpp"
 
 class Worker {
   public:
-    Response handleRequest(const Request& request);
+    ResponseData handleRequest(const RequestData& request);
 
   private:
-    std::string getFullPath(const std::string& host, const std::string& path);
-    bool isStaticRequest(const Request& request);
-    Response handleStaticRequest(const Request& request);
-    Response handleDynamicRequest(const Request& request);
+    std::map<std::string, std::string> header;  // Response header
 
-    std::string doGet(const Request& request);
-    std::string doPost(const Request& request);
-    std::string doDelete(const Request& request);
+    bool isStaticRequest(const RequestData& request);
+    ResponseData handleStaticRequest(const RequestData& request);
+    ResponseData handleDynamicRequest(const RequestData& request);
+    ResponseData doGet(const RequestData& request);
+    ResponseData doPost(const RequestData& request);
+    ResponseData doDelete(const RequestData& request);
+    void fetchHeaders(const RequestData& request);
+    std::string getFullPath(const std::string& host, const std::string& path);
 };
 
 // Utility functions used in Worker.cpp

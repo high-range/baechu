@@ -10,54 +10,60 @@
 #include <string>
 
 #include "Configuration.hpp"
-#include "Request.hpp"
+#include "RequestData.hpp"
 #include "Response.hpp"
 #include "Worker.hpp"
 
 std::string Worker::getFullPath(const std::string& host,
                                 const std::string& path) {
+    (void)host;
     // Configuration config(host);
     // std::string rootDirectory = config.getRootDirectory();
     std::string rootDirectory = "/Users/leesiha/42/nginxTest";
     return rootDirectory + path;
 }
 
-bool Worker::isStaticRequest(const Request& request) {
+bool Worker::isStaticRequest(const RequestData& request) {
     const std::string& method = request.getMethod();
     return (method == "GET" || method == "POST" || method == "DELETE");
 }
 
-Response Worker::handleStaticRequest(const Request& request) {
+ResponseData Worker::handleStaticRequest(const RequestData& request) {
     const std::string& method = request.getMethod();
-    std::string body;
 
-    try {
-        if (method == "GET") {
-            body = doGet(request);
-        } else if (method == "POST") {
-            body = doPost(request);
-        } else if (method == "DELETE") {
-            body = doDelete(request);
-        } else {
-            return Response(405, "Method Not Allowed");
-        }
-        return Response(200, body);
-    } catch (const char* err) {
-        return Response(500, err);
+    if (header.find("Host") == header.end()) {
+        return ResponseData(400);
+    } else if (method == "GET") {
+        return doGet(request);
+    } else if (method == "POST") {
+        return doPost(request);
+    } else if (method == "DELETE") {
+        return doDelete(request);
     }
+    return ResponseData(405);
 }
 
-Response Worker::handleDynamicRequest(const Request& request) {
-    return Response(501, "Not Implemented");
+ResponseData Worker::handleDynamicRequest(const RequestData& request) {
+    (void)request;
+    return ResponseData(501);
 }
 
 bool isFile(const std::string& fullPath) {
     struct stat statBuffer;
     if (stat(fullPath.c_str(), &statBuffer) != 0) {
-        throw "stat failed";
+        throw std::runtime_error(
+            "stat failed for path: " + fullPath +
+            " with error: " + std::string(strerror(errno)));
     }
 
-    return S_ISREG(statBuffer.st_mode);
+    if (S_ISREG(statBuffer.st_mode)) {
+        return true;  // 일반 파일인 경우 true 반환
+    } else if (S_ISDIR(statBuffer.st_mode)) {
+        return false;  // 디렉토리인 경우 false 반환
+    }
+    throw std::runtime_error(
+        "unknown file type: " +
+        fullPath);  // 알 수 없는 파일 유형인 경우 예외 발생
 }
 
 std::string doGetFile(const std::string& fullPath) {
@@ -109,12 +115,21 @@ std::string doGetDirectory(const std::string& fullPath, const std::string& host,
     return generateHTML(fullPath, host, 8080, path);
 }
 
-std::string Worker::doGet(const Request& request) {
-    std::string fullPath = getFullPath(request.getHost(), request.getUrl());
-    if (isFile(fullPath)) {
-        return doGetFile(fullPath);
+ResponseData Worker::doGet(const RequestData& request) {
+    std::string host = header["Host"];
+    std::string fullPath = getFullPath(host, request.getPath());
+
+    try {
+        if (isFile(fullPath)) {
+            return ResponseData(200, doGetFile(fullPath));
+        }
+    } catch (const std::runtime_error& e) {
+        std::cerr << e.what() << std::endl;
+        // 예외가 발생하면 404 Not Found 응답을 반환
+        return ResponseData(404, "Not Found: " + std::string(e.what()));
     }
-    return doGetDirectory(fullPath, request.getHost(), request.getUrl());
+
+    return ResponseData(200, doGetDirectory(fullPath, host, request.getPath()));
 }
 
 std::string generateFilename() {
@@ -140,35 +155,40 @@ bool saveFile(const std::string& dir, const std::string& content) {
     }
 }
 
-std::string Worker::doPost(const Request& request) {
-    std::string fullPath = getFullPath(request.getHost(), request.getUrl());
+ResponseData Worker::doPost(const RequestData& request) {
+    std::string host = header["Host"];
+    std::string fullPath = getFullPath(host, request.getPath());
     std::string content = request.getBody();
 
     if (saveFile(fullPath, content)) {
-        return content;  // Return 201 Created if successful
-    } else {
-        return "";  // Return 500 Internal Server Error
+        return ResponseData(201, content);  // Return 201 Created if successful
     }
+    return ResponseData(500);
 }
 
-std::string Worker::doDelete(const Request& request) {
-    std::string fullPath = getFullPath(request.getHost(), request.getUrl());
+ResponseData Worker::doDelete(const RequestData& request) {
+    std::string host = header["Host"];
+    std::string fullPath = getFullPath(host, request.getPath());
+
     struct stat buffer;
     if (stat(fullPath.c_str(), &buffer) == 0) {
         if (std::remove(fullPath.c_str()) == 0) {
-            return "";  // Return 204 No Content if successful
-        } else {
-            throw "DELETE failed";
+            return ResponseData(204);  // Return 204 No Content if successful
         }
-    } else {
-        return "";  // Return 404 Not Found if the file does not exist
+        return ResponseData(500);
     }
+    return ResponseData(404);
 }
 
-Response Worker::handleRequest(const Request& request) {
+void Worker::fetchHeaders(const RequestData& request) {
+    header = request.getHeader();
+}
+
+ResponseData Worker::handleRequest(const RequestData& request) {
+    fetchHeaders(request);
+
     if (isStaticRequest(request)) {
         return handleStaticRequest(request);
-    } else {
-        return handleDynamicRequest(request);
     }
+    return handleDynamicRequest(request);
 }

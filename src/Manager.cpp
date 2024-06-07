@@ -10,16 +10,16 @@ std::string Manager::run(std::string requestMessage,
                          const Configuration& configuration) {
     try {
         RequestData requestData;
-        std::pair<int, std::string> responseMessageSource;
-
         if (requestMessage.empty()) {
-            throw std::make_pair(400, 0);
+            throw ResponseData(400);
         }
-        Request::messageParse(requestMessage, requestData, configuration);
-        // responseMessageSource = Worker::run(requestData);
 
-        return (Response::messageGenerate(responseMessageSource));
-    } catch (std::pair<int, std::string>& responseMessageSource) {
-        return (Response::messageGenerate(responseMessageSource));
+        Request::messageParse(requestMessage, requestData, configuration);
+
+        ResponseData responseData = Worker().handleRequest(requestData);
+
+        return (Response::messageGenerate(responseData));
+    } catch (ResponseData& responseData) {
+        return (Response::messageGenerate(responseData));
     }
 }
