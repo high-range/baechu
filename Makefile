@@ -13,6 +13,7 @@ SRCS		= src/server/Connector.cpp \
 					src/Request.cpp \
 					src/RequestData.cpp \
 					src/Response.cpp \
+					src/ResponseData.cpp \
 					src/Worker.cpp \
 
 MAIN		= test/ConnectionTestServer.cpp

@@ -26,33 +26,9 @@ class ResponseData {
     Headers headers;
     std::string body;
 
-    ResponseData(int statusCode, Headers headers, std::string body) {
-        this->statusCode = statusCode;
-        this->headers = headers;
-        this->body = body;
-    }
-
-    ResponseData(int statusCode) {
-        this->statusCode = statusCode;
-        this->headers = Headers();
-        this->body = "";
-    }
-
-    ResponseData(int statusCode, std::string body) {
-        this->statusCode = statusCode;
-        this->headers = Headers();
-        this->body = body;
-    }
-
-    ResponseData(int statusCode, Headers headers) {
-        this->statusCode = statusCode;
-        this->headers = headers;
-        this->body = "";
-    }
-
-    ResponseData() {
-        this->statusCode = 200;
-        this->headers = Headers();
-        this->body = "";
-    }
+    ResponseData(int statusCode, Headers headers, std::string body);
+    ResponseData(int statusCode);
+    ResponseData(int statusCode, std::string body);
+    ResponseData(int statusCode, Headers headers);
+    ResponseData();
 };
