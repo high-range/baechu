@@ -2,6 +2,7 @@
 
 #include "Configuration.hpp"
 #include "RequestData.hpp"
+#include "ResponseData.hpp"
 
 void Request::messageParse(std::string& requestMessage,
                            RequestData& requestData,
@@ -26,8 +27,7 @@ void Request::messageParse(std::string& requestMessage,
                 if (isTchar(input)) {
                     state = Method;
                 } else
-                    throw std::make_pair(400,
-                                         std::string("StartLineStart failed"));
+                    throw ResponseData(400);
                 break;
             case Method:
                 if (isTchar(input)) {
@@ -35,7 +35,7 @@ void Request::messageParse(std::string& requestMessage,
                 } else if (input == ' ') {
                     state = MethodEnd;
                 } else
-                    throw std::make_pair(400, std::string("Method failed"));
+                    throw ResponseData(400);
                 begin++;
                 break;
             case MethodEnd:
@@ -46,8 +46,7 @@ void Request::messageParse(std::string& requestMessage,
                 if (input == '/') {
                     state = AbsolutePath;
                 } else
-                    throw std::make_pair(
-                        400, std::string("RequestTargetStart failed"));
+                    throw ResponseData(400);
                 break;
             case AbsolutePath:
                 if (isPchar(begin) || input == '/') {
@@ -73,7 +72,7 @@ void Request::messageParse(std::string& requestMessage,
                 } else if (input == ' ') {
                     state = RequestTargetEnd;
                 } else
-                    throw std::make_pair(400, std::string("Query failed"));
+                    throw ResponseData(400);
                 begin++;
             case RequestTargetEnd:
                 requestData.startLine.path = token;
@@ -86,16 +85,14 @@ void Request::messageParse(std::string& requestMessage,
                     begin += 8;
                     state = StartLineEnd;
                 } else
-                    throw std::make_pair(400,
-                                         std::string("HTTPVersion failed"));
+                    throw ResponseData(400);
                 break;
             case StartLineEnd:
                 if (isCRLF(begin)) {
                     state = HeaderStart;
                     begin += 2;
                 } else
-                    throw std::make_pair(400,
-                                         std::string("StartLineEnd failed"));
+                    throw ResponseData(400);
                 break;
             case HeaderStart:
                 if (isTchar(input)) {
@@ -103,16 +100,15 @@ void Request::messageParse(std::string& requestMessage,
                 } else if (isCRLF(begin))
                     state = HeaderEnd;
                 else
-                    throw std::make_pair(400,
-                                         std::string("HeaderStart failed"));
+                    throw ResponseData(400);
                 break;
             case FieldName:
                 if (isTchar(input)) {
-                    fieldname += input;
+                    fieldname += tolower(input);
                 } else if (input == ':') {
                     state = WhiteSpace;
                 } else
-                    throw std::make_pair(400, std::string("FieldName failed"));
+                    throw ResponseData(400);
                 begin++;
                 break;
             case WhiteSpace:
@@ -142,7 +138,7 @@ void Request::messageParse(std::string& requestMessage,
                     state = FieldName;
                     begin += 2;
                 } else
-                    throw std::make_pair(400, std::string("FieldValue failed"));
+                    throw ResponseData(400);
                 break;
             case FieldContent:
                 if (isFieldVchar(input)) {
@@ -166,7 +162,7 @@ void Request::messageParse(std::string& requestMessage,
             case BodyStart:
                 if (doesExistContentLength(requestData.header) &&
                     doesExistTransferEncoding(requestData.header)) {
-                    throw std::make_pair(400, std::string("BodyStart failed"));
+                    throw ResponseData(400);
                 } else if (doesExistContentLength(requestData.header)) {
                     state = ContentLength;
                 } else if (doesExistTransferEncoding(requestData.header)) {
@@ -181,16 +177,14 @@ void Request::messageParse(std::string& requestMessage,
                         begin, requestData.header["Content-Length"]);
                     state = BodyEnd;
                 } else
-                    throw std::make_pair(400,
-                                         std::string("ContentLength failed"));
+                    throw ResponseData(400);
                 break;
             case TransferEncoding:
                 if (requestData.header["Transfer-Encoding"] == "chunked") {
                     requestData.body = transferEncodingBodyParse(begin, end);
                     state = BodyEnd;
                 } else
-                    throw std::make_pair(
-                        400, std::string("TransferEncoding failed"));
+                    throw ResponseData(400);
                 break;
             case BodyEnd:
                 return;
@@ -205,14 +199,11 @@ std::string Request::contentLengthBodyParse(unsigned char* begin,
     std::string buffer(bodyLength, '\0');
 
     if (bodyStream.fail()) {
-        throw std::make_pair(
-            400,
-            std::string("stream failed"));  // stream 생성 실패에 대한 throw
+        throw ResponseData(400);  // stream 생성 실패에 대한 throw
     }
     bodyStream.read(&buffer[0], bodyLength);
     if (bodyStream.gcount() != bodyLength) {
-        throw std::make_pair(
-            400, std::string("read failed"));  // read error 로 인한 throw
+        throw ResponseData(400);  // read error 로 인한 throw
     }
     return buffer;
 }
@@ -232,7 +223,7 @@ std::string Request::transferEncodingBodyParse(unsigned char* begin,
                 } else if (isHexDigit(input)) {
                     state = ChunkSize;
                 } else
-                    throw std::make_pair(400, std::string("Chunk failed"));
+                    throw ResponseData(400);
                 break;
             case ChunkSize:
                 if (isHexDigit(input)) {
@@ -244,7 +235,7 @@ std::string Request::transferEncodingBodyParse(unsigned char* begin,
                     buffer += *(++begin);
                     state = ChunkData;
                 } else
-                    throw std::make_pair(400, std::string("ChunkSize failed"));
+                    throw ResponseData(400);
                 begin++;
                 break;
             case ChunkExt:
@@ -273,7 +264,7 @@ std::string Request::transferEncodingBodyParse(unsigned char* begin,
                     buffer += *(++begin);
                     state = TrailerStart;
                 } else
-                    throw std::make_pair(400, std::string("LastChunk failed"));
+                    throw ResponseData(400);
                 begin++;
                 break;
             case LastChunkExt:
@@ -290,15 +281,13 @@ std::string Request::transferEncodingBodyParse(unsigned char* begin,
                 } else if (isCRLF(begin)) {
                     state = TrailerEnd;
                 } else
-                    throw std::make_pair(400,
-                                         std::string("TrailerStart failed"));
+                    throw ResponseData(400);
                 break;
             case TrailerFieldName:
                 if (input == ':') {
                     state = TrailerWhiteSpace;
                 } else if (!isTchar(input)) {
-                    throw std::make_pair(
-                        400, std::string("TrailerFieldName failed"));
+                    throw ResponseData(400);
                 }
                 buffer += input;
                 begin++;
@@ -326,8 +315,7 @@ std::string Request::transferEncodingBodyParse(unsigned char* begin,
                     begin++;
                     state = TrailerFieldName;
                 } else
-                    throw std::make_pair(
-                        400, std::string("TrailerFieldName failed"));
+                    throw ResponseData(400);
                 break;
             case TrailerFieldContent:
                 if (isFieldVchar(input)) {
