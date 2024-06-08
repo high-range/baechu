@@ -1,5 +1,58 @@
 #include "Configuration.hpp"
 
+const std::set<std::string> valid_block_names = {
+    "http",   "server", "location",     "upstream",     "events",
+    "stream", "mail",   "if",           "limit_except", "map",
+    "types",  "geo",    "split_clients"};
+
+const std::set<std::string> valid_directive_keys = {"accept_mutex",
+                                                    "access_log",
+                                                    "add_header",
+                                                    "allow",
+                                                    "deny",
+                                                    "error_log",
+                                                    "error_page",
+                                                    "listen",
+                                                    "root",
+                                                    "index",
+                                                    "methods",
+                                                    "CGI",
+                                                    "php"
+                                                    "client_max_body_size",
+                                                    "keepalive_timeout",
+                                                    "proxy_pass",
+                                                    "rewrite",
+                                                    "sendfile",
+                                                    "ssl_certificate",
+                                                    "ssl_certificate_key",
+                                                    "proxy_set_header",
+                                                    "fastcgi_pass",
+                                                    "include",
+                                                    "default_type",
+                                                    "log_format",
+                                                    "server_name",
+                                                    "worker_processes",
+                                                    "user",
+                                                    "pid",
+                                                    "worker_connections",
+                                                    "charset"};
+
+bool isValidLocationBlockName(const std::string& name) {
+    std::string path = name.substr(8);  // "location" 다음의 경로 추출
+    return !path.empty();  // 경로가 비어있지 않은지 확인
+}
+
+bool isValidBlockName(const std::string& name) {
+    if (name.find("location") == 0) {
+        return isValidLocationBlockName(name);
+    }
+    return valid_block_names.find(name) != valid_block_names.end();
+}
+
+bool isValidDirectiveKey(const std::string& key) {
+    return valid_directive_keys.find(key) != valid_directive_keys.end();
+}
+
 // 앞,뒤 tap,space 없애주는 함수
 std::string trim(const std::string& str) {
     size_t not_tap_first = str.find_first_not_of(
