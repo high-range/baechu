@@ -104,7 +104,7 @@ void Request::messageParse(std::string& requestMessage,
                 break;
             case FieldName:
                 if (isTchar(input)) {
-                    fieldname += toupper(input);
+                    fieldname += tolower(input);
                 } else if (input == ':') {
                     state = WhiteSpace;
                 } else
