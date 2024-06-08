@@ -2,6 +2,7 @@
 
 #include <dirent.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include <ctime>
 #include <fstream>
@@ -14,6 +15,27 @@
 #include "Response.hpp"
 #include "Worker.hpp"
 
+// FOR DEVELOPMENT
+
+static std::string _rootDirectory = std::string(getenv("PWD"));
+
+static const char* __cgiDirectories[] = {"/test/cgi-bin"};
+static std::vector<std::string> _cgiDirectories(
+    __cgiDirectories,
+    __cgiDirectories + sizeof(__cgiDirectories) / sizeof(__cgiDirectories[0]));
+
+static bool _isDynamicRequest(const std::string& path) {
+    for (std::vector<std::string>::iterator it = _cgiDirectories.begin();
+         it != _cgiDirectories.end(); it++) {
+        if (path.find(*it) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// END FOR DEVELOPMENT
+
 Worker::Worker(const RequestData& request) : request(request) {
     header = request.getHeader();
 }
@@ -23,11 +45,14 @@ std::string Worker::getFullPath(const std::string& host,
     (void)host;
     // Configuration config(host);
     // std::string rootDirectory = config.getRootDirectory();
-    std::string rootDirectory = "/Users/leesiha/42/nginxTest";
-    return rootDirectory + path;
+    return _rootDirectory + path;
 }
 
 bool Worker::isStaticRequest(const RequestData& request) {
+    if (_isDynamicRequest(request.getPath())) {
+        return false;
+    }
+
     const std::string& method = request.getMethod();
     return (method == "GET" || method == "POST" || method == "DELETE");
 }
@@ -45,11 +70,6 @@ ResponseData Worker::handleStaticRequest(const RequestData& request) {
         return doDelete(request);
     }
     return ResponseData(405);
-}
-
-ResponseData Worker::handleDynamicRequest(const RequestData& request) {
-    (void)request;
-    return ResponseData(501);
 }
 
 bool isFile(const std::string& fullPath) {
@@ -184,9 +204,108 @@ ResponseData Worker::doDelete(const RequestData& request) {
     return ResponseData(404);
 }
 
+ResponseData Worker::handleDynamicRequest() {
+    std::istringstream response(runCgi());
+
+    Headers headers;
+    for (std::string line; std::getline(response, line);) {
+        if (line.empty()) {
+            break;
+        }
+
+        size_t colonPos = line.find(':');
+        std::string key = line.substr(0, colonPos);
+        headers[key] = line[colonPos + 1] == ' ' ? line.substr(colonPos + 2)
+                                                 : line.substr(colonPos + 1);
+    }
+
+    int statusCode = 200;
+    if (headers.find("Status") != headers.end()) {
+        statusCode = std::atoi(headers["Status"].c_str());
+        headers.erase("Status");
+    }
+
+    std::string body;
+    std::getline(response, body, '\0');
+
+    return ResponseData(statusCode, headers, body);
+}
+
+char** makeEnvp(CgiEnvMap& envMap) {
+    char** envp = new char*[envMap.size() + 1];
+
+    int i = 0;
+    for (CgiEnvMap::iterator it = envMap.begin(); it != envMap.end(); it++) {
+        std::string env = it->first + "=" + it->second;
+        envp[i] = new char[env.size() + 1];
+        std::strcpy(envp[i], env.c_str());
+        i++;
+    }
+    envp[i] = NULL;
+
+    return envp;
+}
+
+std::string Worker::runCgi() {
+    int fds[2];
+    pipe(fds);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        close(fds[0]);
+
+        dup2(fds[1], STDOUT_FILENO);
+        close(fds[1]);
+
+        std::string fullPath = getFullPath(header["Host"], request.getPath());
+
+        CgiEnvMap envMap = makeEnvMap();
+        char** envp = makeEnvp(envMap);
+
+        execve(fullPath.c_str(), NULL, envp);
+
+        exit(EXIT_FAILURE);
+    }
+
+    close(fds[1]);
+
+    std::ostringstream ss;
+    char buf[4096];
+    ssize_t n;
+    while ((n = read(fds[0], buf, sizeof(buf))) > 0) {
+        ss.write(buf, n);
+    }
+
+    close(fds[0]);
+    waitpid(pid, NULL, 0);
+    return ss.str();
+}
+
+CgiEnvMap Worker::makeEnvMap() {
+    CgiEnvMap envMap;
+    envMap["AUTH_TYPE"] = "";
+    envMap["CONTENT_LENGTH"] = header["Content-Length"];
+    envMap["CONTENT_TYPE"] = header["Content-Type"];
+    envMap["GATEWAY_INTERFACE"] = "CGI/1.1";
+    envMap["PATH_INFO"] = "";
+    envMap["PATH_TRANSLATED"] = "";
+    envMap["QUERY_STRING"] = "";
+    envMap["REMOTE_ADDR"] = "";
+    envMap["REMOTE_HOST"] = "";
+    envMap["REMOTE_IDENT"] = "";
+    envMap["REMOTE_USER"] = "";
+    envMap["REQUEST_METHOD"] = "";
+    envMap["SCRIPT_NAME"] = "";
+    envMap["SERVER_NAME"] = "";
+    envMap["SERVER_PORT"] = "";
+    envMap["SERVER_PROTOCOL"] = "HTTP/1.1";
+    envMap["SERVER_SOFTWARE"] = "baechu/0.1";
+    return envMap;
+}
+
 ResponseData Worker::handleRequest() {
     if (isStaticRequest(request)) {
         return handleStaticRequest(request);
     }
-    return handleDynamicRequest(request);
+    return handleDynamicRequest();
 }

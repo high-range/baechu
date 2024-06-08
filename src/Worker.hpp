@@ -5,6 +5,8 @@
 #include "RequestData.hpp"
 #include "Response.hpp"
 
+typedef std::map<std::string, std::string> CgiEnvMap;
+
 class Worker {
   public:
     Worker(const RequestData& request);
@@ -18,11 +20,13 @@ class Worker {
 
     bool isStaticRequest(const RequestData& request);
     ResponseData handleStaticRequest(const RequestData& request);
-    ResponseData handleDynamicRequest(const RequestData& request);
     ResponseData doGet(const RequestData& request);
     ResponseData doPost(const RequestData& request);
     ResponseData doDelete(const RequestData& request);
     std::string getFullPath(const std::string& host, const std::string& path);
+    ResponseData handleDynamicRequest();
+    CgiEnvMap makeEnvMap();
+    std::string runCgi();
 };
 
 // Utility functions used in Worker.cpp
