@@ -7,9 +7,13 @@
 
 class Worker {
   public:
-    ResponseData handleRequest(const RequestData& request);
+    Worker(const RequestData& request);
+
+    ResponseData handleRequest();
 
   private:
+    const RequestData& request;
+
     std::map<std::string, std::string> header;  // Response header
 
     bool isStaticRequest(const RequestData& request);
@@ -18,7 +22,6 @@ class Worker {
     ResponseData doGet(const RequestData& request);
     ResponseData doPost(const RequestData& request);
     ResponseData doDelete(const RequestData& request);
-    void fetchHeaders(const RequestData& request);
     std::string getFullPath(const std::string& host, const std::string& path);
 };
 

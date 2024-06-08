@@ -14,6 +14,10 @@
 #include "Response.hpp"
 #include "Worker.hpp"
 
+Worker::Worker(const RequestData& request) : request(request) {
+    header = request.getHeader();
+}
+
 std::string Worker::getFullPath(const std::string& host,
                                 const std::string& path) {
     (void)host;
@@ -180,13 +184,7 @@ ResponseData Worker::doDelete(const RequestData& request) {
     return ResponseData(404);
 }
 
-void Worker::fetchHeaders(const RequestData& request) {
-    header = request.getHeader();
-}
-
-ResponseData Worker::handleRequest(const RequestData& request) {
-    fetchHeaders(request);
-
+ResponseData Worker::handleRequest() {
     if (isStaticRequest(request)) {
         return handleStaticRequest(request);
     }
