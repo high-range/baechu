@@ -25,7 +25,7 @@ class Worker {
     ResponseData doDelete(const RequestData& request);
     std::string getFullPath(const std::string& host, const std::string& path);
     ResponseData handleDynamicRequest();
-    CgiEnvMap makeEnvMap();
+    CgiEnvMap createCgiEnvMap();
     std::string runCgi();
 };
 

@@ -19,10 +19,11 @@
 
 static std::string _rootDirectory = std::string(getenv("PWD"));
 
-static const char* __cgiDirectories[] = {"/test/cgi-bin"};
+static const char* _cgiDirectoriesArray[] = {"/test/cgi-bin"};
 static std::vector<std::string> _cgiDirectories(
-    __cgiDirectories,
-    __cgiDirectories + sizeof(__cgiDirectories) / sizeof(__cgiDirectories[0]));
+    _cgiDirectoriesArray,
+    _cgiDirectoriesArray +
+        sizeof(_cgiDirectoriesArray) / sizeof(_cgiDirectoriesArray[0]));
 
 static bool _isDynamicRequest(const std::string& path) {
     for (std::vector<std::string>::iterator it = _cgiDirectories.begin();
@@ -259,7 +260,7 @@ std::string Worker::runCgi() {
 
         std::string fullPath = getFullPath(header["Host"], request.getPath());
 
-        CgiEnvMap envMap = makeEnvMap();
+        CgiEnvMap envMap = createCgiEnvMap();
         char** envp = makeEnvp(envMap);
 
         execve(fullPath.c_str(), NULL, envp);
@@ -281,7 +282,7 @@ std::string Worker::runCgi() {
     return ss.str();
 }
 
-CgiEnvMap Worker::makeEnvMap() {
+CgiEnvMap Worker::createCgiEnvMap() {
     CgiEnvMap envMap;
     envMap["AUTH_TYPE"] = "";
     envMap["CONTENT_LENGTH"] = header["Content-Length"];
