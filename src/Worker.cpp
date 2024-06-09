@@ -216,8 +216,12 @@ ResponseData Worker::handleDynamicRequest() {
 
         size_t colonPos = line.find(':');
         std::string key = line.substr(0, colonPos);
-        headers[key] = line[colonPos + 1] == ' ' ? line.substr(colonPos + 2)
-                                                 : line.substr(colonPos + 1);
+
+        if (line[colonPos + 1] == ' ') {
+            headers[key] = line.substr(colonPos + 2);
+        } else {
+            headers[key] = line.substr(colonPos + 1);
+        }
     }
 
     int statusCode = 200;
