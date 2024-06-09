@@ -16,7 +16,7 @@ std::string Manager::run(std::string requestMessage,
 
         Request::messageParse(requestMessage, requestData, configuration);
 
-        ResponseData responseData = Worker().handleRequest(requestData);
+        ResponseData responseData = Worker(requestData).handleRequest();
 
         return (Response::messageGenerate(responseData));
     } catch (ResponseData& responseData) {
