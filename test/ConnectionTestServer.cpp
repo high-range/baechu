@@ -22,13 +22,21 @@ class Webserv : public Connector {
         }
 
         std::string request(buffer, bytes_read);
-        std::string response = Manager::run(request, Configuration());
+        std::string response =
+            Manager::run(request, Configuration::getInstance());
         send(client_fd, response.c_str(), response.size(), 0);
         std::cout << "Response sent" << std::endl;
     }
 };
 
-int main() {
+int main(int argc, char* argv[]) {
+    std::string filename = "./conf/default.conf";
+    if (argc > 1) filename = argv[1];
+
+    // Get the single instance of Configuration and initialize it
+    Configuration& config = Configuration::getInstance();
+    config.initialize(filename);
+
     Webserv server(8080);
     server.start();
     return 0;
