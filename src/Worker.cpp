@@ -13,7 +13,6 @@
 #include "Configuration.hpp"
 #include "RequestData.hpp"
 #include "Response.hpp"
-#include "Worker.hpp"
 
 // FOR DEVELOPMENT
 
@@ -43,10 +42,43 @@ Worker::Worker(const RequestData& request) : request(request) {
 
 std::string Worker::getFullPath(const std::string& host,
                                 const std::string& path) {
-    (void)host;
-    // Configuration config(host);
-    // std::string rootDirectory = config.getRootDirectory();
-    return _rootDirectory + path;
+    Configuration& config = Configuration::getInstance();
+
+    // Extract domain and port
+    std::string domain;
+    std::string port;
+    size_t colonPos = host.find(':');
+    if (colonPos != std::string::npos) {
+        domain = host.substr(0, colonPos);
+        port = host.substr(colonPos + 1);
+    } else {
+        // Handle case where no port is specified
+        domain = "localhost";
+        port = "8080";  // Default to port 8080 if no port is specified
+    }
+
+    std::string rootDirectory = config.getRootDirectory(domain, port, path);
+
+    // TODO : getRootDirectory should be changed to longest prefix matching
+    // (exact matching -> longest prefix matching)
+    if (rootDirectory.empty()) {
+        rootDirectory += "test/static";
+    }
+    // else if (!rootDirectory.empty() && rootDirectory.back() != '/') {
+    //     rootDirectory += '/';
+    // }
+
+    // Construct the full path
+    std::string fullPath = rootDirectory + path;
+
+    // Normalize the path to avoid issues with double slashes
+    // for (std::string::size_type pos = fullPath.find("//");
+    //      pos != std::string::npos; pos = fullPath.find("//")) {
+    //     fullPath.erase(pos, 1);
+    // }
+    // std::cout << "Root directory: " << rootDirectory << std::endl;
+    // std::cout << "Full path: " << fullPath << std::endl;
+    return fullPath;
 }
 
 bool Worker::isStaticRequest(const RequestData& request) {
@@ -55,13 +87,13 @@ bool Worker::isStaticRequest(const RequestData& request) {
     }
 
     const std::string& method = request.getMethod();
-    return (method == "GET" || method == "POST" || method == "DELETE");
+    return (method == GET || method == POST || method == DELETE);
 }
 
 ResponseData Worker::handleStaticRequest(const RequestData& request) {
     const std::string& method = request.getMethod();
 
-    if (header.find("Host") == header.end()) {
+    if (header[HOST_HEADER].empty()) {
         return ResponseData(400);
     } else if (method == "GET") {
         return doGet(request);
@@ -137,11 +169,13 @@ std::string generateHTML(const std::string& fullPath, const std::string& host,
 
 std::string doGetDirectory(const std::string& fullPath, const std::string& host,
                            const std::string& path) {
-    return generateHTML(fullPath, host, 8080, path);
+    std::string domain = host.substr(0, host.find(':'));
+    std::string port = host.substr(host.find(':') + 1);
+    return generateHTML(fullPath, domain, std::stoi(port), path);
 }
 
 ResponseData Worker::doGet(const RequestData& request) {
-    std::string host = header["Host"];
+    std::string host = header[HOST_HEADER];
     std::string fullPath = getFullPath(host, request.getPath());
 
     try {
@@ -181,7 +215,7 @@ bool saveFile(const std::string& dir, const std::string& content) {
 }
 
 ResponseData Worker::doPost(const RequestData& request) {
-    std::string host = header["Host"];
+    std::string host = header[HOST_HEADER];
     std::string fullPath = getFullPath(host, request.getPath());
     std::string content = request.getBody();
 
@@ -192,7 +226,7 @@ ResponseData Worker::doPost(const RequestData& request) {
 }
 
 ResponseData Worker::doDelete(const RequestData& request) {
-    std::string host = header["Host"];
+    std::string host = header[HOST_HEADER];
     std::string fullPath = getFullPath(host, request.getPath());
 
     struct stat buffer;
@@ -262,7 +296,8 @@ std::string Worker::runCgi() {
         dup2(fds[1], STDOUT_FILENO);
         close(fds[1]);
 
-        std::string fullPath = getFullPath(header["Host"], request.getPath());
+        std::string fullPath =
+            getFullPath(header[HOST_HEADER], request.getPath());
 
         CgiEnvMap envMap = createCgiEnvMap();
         char** envp = makeEnvp(envMap);
@@ -289,9 +324,9 @@ std::string Worker::runCgi() {
 CgiEnvMap Worker::createCgiEnvMap() {
     CgiEnvMap envMap;
     envMap["AUTH_TYPE"] = "";
-    envMap["CONTENT_LENGTH"] = header["Content-Length"];
-    envMap["CONTENT_TYPE"] = header["Content-Type"];
-    envMap["GATEWAY_INTERFACE"] = "CGI/1.1";
+    envMap["CONTENT_LENGTH"] = header[CONTENT_LENGTH_HEADER];
+    envMap["CONTENT_TYPE"] = header[CONTENT_TYPE_HEADER];
+    envMap["GATEWAY_INTERFACE"] = GATEWAY_INTERFACE;
     envMap["PATH_INFO"] = "";
     envMap["PATH_TRANSLATED"] = "";
     envMap["QUERY_STRING"] = "";
@@ -303,8 +338,8 @@ CgiEnvMap Worker::createCgiEnvMap() {
     envMap["SCRIPT_NAME"] = "";
     envMap["SERVER_NAME"] = "";
     envMap["SERVER_PORT"] = "";
-    envMap["SERVER_PROTOCOL"] = "HTTP/1.1";
-    envMap["SERVER_SOFTWARE"] = "baechu/0.1";
+    envMap["SERVER_PROTOCOL"] = VERSION;
+    envMap["SERVER_SOFTWARE"] = SERVER_SOFTWARE;
     return envMap;
 }
 
