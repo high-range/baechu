@@ -1,41 +1,61 @@
 #include "Configuration.hpp"
 
-const std::set<std::string> valid_block_names = {
-    "http",   "server", "location",     "upstream",     "events",
-    "stream", "mail",   "if",           "limit_except", "map",
-    "types",  "geo",    "split_clients"};
+const std::set<std::string> createValidBlockNames() {
+    std::set<std::string> s;
+    s.insert("http");
+    s.insert("server");
+    s.insert("location");
+    s.insert("upstream");
+    s.insert("events");
+    s.insert("stream");
+    s.insert("mail");
+    s.insert("if");
+    s.insert("limit_except");
+    s.insert("map");
+    s.insert("types");
+    s.insert("geo");
+    s.insert("split_clients");
+    return s;
+}
 
-const std::set<std::string> valid_directive_keys = {"accept_mutex",
-                                                    "access_log",
-                                                    "add_header",
-                                                    "allow",
-                                                    "deny",
-                                                    "error_log",
-                                                    "error_page",
-                                                    "listen",
-                                                    "root",
-                                                    "index",
-                                                    "methods",
-                                                    "CGI",
-                                                    "php"
-                                                    "client_max_body_size",
-                                                    "keepalive_timeout",
-                                                    "proxy_pass",
-                                                    "rewrite",
-                                                    "sendfile",
-                                                    "ssl_certificate",
-                                                    "ssl_certificate_key",
-                                                    "proxy_set_header",
-                                                    "fastcgi_pass",
-                                                    "include",
-                                                    "default_type",
-                                                    "log_format",
-                                                    "server_name",
-                                                    "worker_processes",
-                                                    "user",
-                                                    "pid",
-                                                    "worker_connections",
-                                                    "charset"};
+const std::set<std::string> createValidDirectiveKeys() {
+    std::set<std::string> s;
+    s.insert("accept_mutex");
+    s.insert("access_log");
+    s.insert("add_header");
+    s.insert("allow");
+    s.insert("deny");
+    s.insert("error_log");
+    s.insert("error_page");
+    s.insert("listen");
+    s.insert("root");
+    s.insert("index");
+    s.insert("methods");
+    s.insert("CGI");
+    s.insert("php");
+    s.insert("client_max_body_size");
+    s.insert("keepalive_timeout");
+    s.insert("proxy_pass");
+    s.insert("rewrite");
+    s.insert("sendfile");
+    s.insert("ssl_certificate");
+    s.insert("ssl_certificate_key");
+    s.insert("proxy_set_header");
+    s.insert("fastcgi_pass");
+    s.insert("include");
+    s.insert("default_type");
+    s.insert("log_format");
+    s.insert("server_name");
+    s.insert("worker_processes");
+    s.insert("user");
+    s.insert("pid");
+    s.insert("worker_connections");
+    s.insert("charset");
+    return s;
+}
+
+const std::set<std::string> valid_block_names = createValidBlockNames();
+const std::set<std::string> valid_directive_keys = createValidDirectiveKeys();
 
 bool isValidLocationBlockName(const std::string& name) {
     std::string path = name.substr(8);  // "location" 다음의 경로 추출
