@@ -69,9 +69,11 @@ int main(void) {
     }
 
     std::cout << "Method: " << requestData.getMethod() << std::endl;
+    std::cout << "RequestTarget: " << requestData.getRequestTarget()
+              << std::endl;
     std::cout << "Path: " << requestData.getPath() << std::endl;
-    std::cout << "Version: " << requestData.getVersion() << std::endl;
     std::cout << "Query: " << requestData.getQuery() << std::endl;
+    std::cout << "Version: " << requestData.getVersion() << std::endl;
     std::cout << std::endl;
     std::map<std::string, std::string>::iterator it;
     std::map<std::string, std::string> myMap = requestData.getHeader();
