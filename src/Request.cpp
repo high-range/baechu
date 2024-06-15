@@ -14,6 +14,7 @@ void Request::messageParse(std::string& requestMessage,
     unsigned char* begin;
     unsigned char* end;
     unsigned char input;
+    unsigned int queryStart;
 
     (void)configuration;
     // test를 위해 임시로 작성
@@ -57,6 +58,7 @@ void Request::messageParse(std::string& requestMessage,
                     }
                 } else if (input == '?') {
                     token += input;
+                    queryStart = token.length();
                     state = Query;
                 } else if (input == ' ') {
                     state = RequestTargetEnd;
@@ -71,6 +73,7 @@ void Request::messageParse(std::string& requestMessage,
                         token += *(++begin);
                     }
                 } else if (input == ' ') {
+                    requestData.query = token.substr(queryStart);
                     state = RequestTargetEnd;
                 } else
                     throw ResponseData(400);

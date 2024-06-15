@@ -13,6 +13,7 @@ class RequestData {
     } startLine;
     std::map<std::string, std::string> header;
     std::string body;
+    std::string query;
 
   public:
     std::string getMethod() const;
