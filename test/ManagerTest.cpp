@@ -10,7 +10,7 @@ int main(void) {
     RequestData requestData;
     Configuration config;
     std::string requestMessage =
-        "POST /upload HTTP/1.1\r\n"
+        "POST /upload?asdfasfd HTTP/1.1\r\n"
         "Host: www.example.com\r\n"
         "User-Agent: CustomClient/1.0\r\n"
         "Content-Type: application/x-www-form-urlencoded\r\n"
@@ -70,6 +70,7 @@ int main(void) {
     std::cout << requestData.getMethod() << std::endl;
     std::cout << requestData.getPath() << std::endl;
     std::cout << requestData.getVersion() << std::endl;
+    std::cout << requestData.getQuery() << std::endl;
     std::map<std::string, std::string>::iterator it;
     std::map<std::string, std::string> myMap = requestData.getHeader();
     // requestData에서 getter를 통해 필요한 데이터를 가져옴

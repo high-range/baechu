@@ -20,6 +20,7 @@ class RequestData {
     std::string getVersion() const;
     std::map<std::string, std::string> getHeader() const;
     std::string getBody() const;
+    std::string getQuery() const;
 
     friend class Request;
 };
