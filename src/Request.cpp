@@ -11,6 +11,7 @@ void Request::messageParse(std::string& requestMessage,
     std::string token;
     std::string fieldname;
     std::string fieldvalue;
+    std::string::size_type queryStart;
     unsigned char* begin;
     unsigned char* end;
     unsigned char input;
@@ -56,10 +57,15 @@ void Request::messageParse(std::string& requestMessage,
                         token += *(++begin);
                     }
                 } else if (input == '?') {
+                    requestData.startLine.path = token;
+                    token += input;
+                    queryStart = token.size();
                     state = Query;
                 } else if (input == ' ') {
+                    requestData.startLine.path = token;
                     state = RequestTargetEnd;
-                }
+                } else
+                    throw ResponseData(400);
                 begin++;
                 break;
             case Query:
@@ -70,12 +76,14 @@ void Request::messageParse(std::string& requestMessage,
                         token += *(++begin);
                     }
                 } else if (input == ' ') {
+                    requestData.startLine.query = token.substr(queryStart);
                     state = RequestTargetEnd;
                 } else
                     throw ResponseData(400);
                 begin++;
+                break;
             case RequestTargetEnd:
-                requestData.startLine.path = token;
+                requestData.startLine.requestTarget = token;
                 token = "";
                 state = HTTPVersion;
                 break;
@@ -411,7 +419,7 @@ std::string Request::th_substr(const unsigned char* src, const size_t start,
                                const size_t end) {
     std::string result;
 
-    if (start <= end) {
+    if (start >= end) {
         return result;
     }
     for (size_t i = start; i < end; i++) {
