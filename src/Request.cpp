@@ -56,6 +56,7 @@ void Request::messageParse(std::string& requestMessage,
                         token += *(++begin);
                     }
                 } else if (input == '?') {
+                    token += input;
                     state = Query;
                 } else if (input == ' ') {
                     state = RequestTargetEnd;
@@ -74,6 +75,7 @@ void Request::messageParse(std::string& requestMessage,
                 } else
                     throw ResponseData(400);
                 begin++;
+                break;
             case RequestTargetEnd:
                 requestData.startLine.path = token;
                 token = "";
