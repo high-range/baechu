@@ -244,6 +244,10 @@ ResponseData Worker::handleDynamicRequest() {
 
     Headers headers;
     for (std::string line; std::getline(response, line);) {
+        if (line.back() == '\r') {
+            line.pop_back();
+        }
+
         if (line.empty()) {
             break;
         }
