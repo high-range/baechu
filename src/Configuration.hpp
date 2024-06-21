@@ -38,9 +38,8 @@ class Configuration {
     Block getServerBlockWithPort(const std::string& port_number) const;
     Block getServerBlockWithPortHelper(const std::vector<Block>& blocks,
                                        const std::string& port_number) const;
-    std::string getRootDirectory(const std::string& server_name,
-                                 const std::string& port_number,
-                                 const std::string& location) const;
+    std::string getRootDirectory(const std::string& path) const;
+    std::string getClientMaxBodySize() const;
 
   private:
     // Private constructor to prevent instantiation

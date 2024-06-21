@@ -199,14 +199,38 @@ Block Configuration::getServerBlockWithPort(
     return getServerBlockWithPortHelper(blocks, port_number);
 }
 
-std::string Configuration::getRootDirectory(const std::string& server_name,
-                                            const std::string& port_number,
-                                            const std::string& location) const {
+std::string Configuration::getRootDirectory(const std::string& path) const {
+    std::string server_name;
+    std::string port_number;
+    std::string location;
+
+    // server, port, location parsing
+    size_t slash_pos = path.find('/');
+    size_t colon_pos = path.find(':');
+    if (slash_pos != std::string::npos) {
+        location = path.substr(slash_pos);
+        if (colon_pos == std::string::npos || colon_pos > slash_pos) {
+            server_name = path.substr(0, slash_pos);
+            port_number = "80";
+        } else {
+            server_name = path.substr(0, colon_pos);
+            port_number = path.substr(colon_pos + 1, slash_pos - colon_pos - 1);
+        }
+    } else {
+        location = "/";
+        if (colon_pos == std::string::npos) {
+            server_name = path;
+            port_number = "80";
+        } else {
+            server_name = path.substr(0, colon_pos);
+            port_number = path.substr(colon_pos + 1);
+        }
+    }
+
     // server_name과 port_number로 server Block 찾기
-    // priority은 port_number > server_name
-    Block server = Configuration::getServerBlockWithPort(port_number);
+    Block server = getServerBlockWithPort(port_number);
     if (server.name.empty()) {
-        server = Configuration::getServerBlockWithName(server_name);
+        server = getServerBlockWithName(server_name);
         if (server.name.empty()) {
             return "";
         }
@@ -216,10 +240,12 @@ std::string Configuration::getRootDirectory(const std::string& server_name,
     std::string location_name = "location " + location;
     for (std::vector<Block>::const_iterator block_it =
              server.sub_blocks.begin();
-         block_it != server.sub_blocks.end(); ++block_it) {
+         block_it != server.sub_blocks.end(); block_it++) {
         if (block_it->name == location_name) {
             return block_it->directives.at("root");
         }
     }
     return "";
 }
+
+std::string Configuration::getClientMaxBodySize() const {}
