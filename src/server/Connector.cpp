@@ -13,18 +13,10 @@
 Connector::Connector(int port) : port(port), serverFd(-1), kq(-1) {}
 
 void Connector::start() {
-    try {
-        setupServer();
-        std::cout << "Server started on port " << port << std::endl;
-        handleConnections();
-        std::cout << "Server stopped" << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
-        stop();
-    } catch (const char* msg) {
-        std::cerr << "Exception: " << msg << std::endl;
-        stop();
-    }
+    setupServer();
+    std::cout << "Server started on port " << port << std::endl;
+    handleConnections();
+    std::cout << "Server stopped" << std::endl;
 }
 
 void Connector::stop() {
