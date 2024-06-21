@@ -3,14 +3,15 @@
 #include "../src/Configuration.hpp"
 #include "../src/Request.hpp"
 #include "../src/RequestData.hpp"
+#include "../src/ResponseData.hpp"
 
 using namespace std;
 
 int main(void) {
     RequestData requestData;
-    Configuration config;
+    Configuration config = Configuration::getInstance();
     std::string requestMessage =
-        "POST /upload HTTP/1.1\r\n"
+        "POST /upload?asdf HTTP/1.1\r\n"
         "Host: www.example.com\r\n"
         "User-Agent: CustomClient/1.0\r\n"
         "Content-Type: application/x-www-form-urlencoded\r\n"
@@ -63,13 +64,17 @@ int main(void) {
 
     try {
         Request::messageParse(requestMessage, requestData, config);
-    } catch (std::pair<int, std::string> e) {
-        cout << e.second << "\n" << endl;
+    } catch (ResponseData& response) {
+        cout << response.statusCode << endl;
     }
 
-    std::cout << requestData.getMethod() << std::endl;
-    std::cout << requestData.getPath() << std::endl;
-    std::cout << requestData.getVersion() << std::endl;
+    std::cout << "Method: " << requestData.getMethod() << std::endl;
+    std::cout << "RequestTarget: " << requestData.getRequestTarget()
+              << std::endl;
+    std::cout << "Path: " << requestData.getPath() << std::endl;
+    std::cout << "Query: " << requestData.getQuery() << std::endl;
+    std::cout << "Version: " << requestData.getVersion() << std::endl;
+    std::cout << std::endl;
     std::map<std::string, std::string>::iterator it;
     std::map<std::string, std::string> myMap = requestData.getHeader();
     // requestData에서 getter를 통해 필요한 데이터를 가져옴

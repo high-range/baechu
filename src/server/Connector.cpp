@@ -43,6 +43,15 @@ void Connector::setupServer() {
         exit(EXIT_FAILURE);
     }
 
+    // Set SO_REUSEADDR option
+    int opt = 1;
+    if (setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) ==
+        -1) {
+        std::cerr << "Failed to set SO_REUSEADDR" << std::endl;
+        close(serverFd);
+        exit(EXIT_FAILURE);
+    }
+
     setNonBlocking(serverFd);
 
     sockaddr_in serverAddr;

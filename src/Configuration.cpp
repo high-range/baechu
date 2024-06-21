@@ -3,13 +3,16 @@
 #include <iostream>
 
 // -------------------------- Constructor -------------------------------
-Configuration::Configuration() {
-    // default setting
-    std::cout << "Set Default Setting" << std::endl;
-    parseConfigFile("./conf/default.conf");
+Configuration::Configuration() {}
+
+// Static method to get the single instance of Configuration
+Configuration& Configuration::getInstance() {
+    static Configuration instance;
+    return instance;
 }
 
-Configuration::Configuration(const std::string& filename) {
+// Method to initialize the Configuration with a filename
+void Configuration::initialize(const std::string& filename) {
     parseConfigFile(filename);
 }
 
@@ -139,35 +142,6 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
     return true;
 }
 
-// --------------------------- 지워야함 -------------------------------------
-void Configuration::printBlock(const Block& block, int indent = 0) const {
-    std::string indentation(indent, ' ');
-    std::cout << indentation << "Block name: " << block.name << std::endl;
-
-    for (const auto& directive : block.directives) {
-        std::cout << indentation << "  " << directive.first << ": "
-                  << directive.second << std::endl;
-    }
-
-    for (const auto& sub_block : block.sub_blocks) {
-        printBlock(sub_block, indent + 2);
-    }
-}
-
-void Configuration::printConfig() const {
-    std::cout << "------------print-----------" << std::endl;
-
-    for (const auto& directive : simple_directives) {
-        std::cout << directive.first << ": " << directive.second << std::endl;
-    }
-    for (const auto& block : blocks) {
-        printBlock(block, 0);
-        std::cout << std::endl;
-    }
-    std::cout << "----------------------------" << std::endl;
-}
-// ---------------------------------------------------------------------------
-
 // -------------------------- 정보 가져오는 함수 -------------------------------
 Block Configuration::getServerBlockWithNameHelper(
     const std::vector<Block>& blocks, const std::string& server_name) const {
@@ -230,9 +204,9 @@ std::string Configuration::getRootDirectory(const std::string& server_name,
                                             const std::string& location) const {
     // server_name과 port_number로 server Block 찾기
     // priority은 port_number > server_name
-    Block server = getServerBlockWithPort(port_number);
+    Block server = Configuration::getServerBlockWithPort(port_number);
     if (server.name.empty()) {
-        server = getServerBlockWithName(server_name);
+        server = Configuration::getServerBlockWithName(server_name);
         if (server.name.empty()) {
             return "";
         }

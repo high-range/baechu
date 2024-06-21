@@ -1,0 +1,1 @@
+beTracker={t:function(a){"undefined"==typeof a&&(a={}),a.u=document.location.href,a.bw=window.innerWidth,a.bh=window.innerHeight,document.referrer&&""!=document.referrer&&(a.ref=document.referrer);var b=[];for(var c in a)a.hasOwnProperty(c)&&b.push(encodeURIComponent(c)+"="+encodeURIComponent(a[c]));var d=new Image;d.src="https://tracker.metricool.com/c3po.jpg?"+b.join("&")}};

@@ -8,6 +8,7 @@ ARFILE		= webserv.a
 INCLUDES_HEADER  = -I src
 
 SRCS		= src/server/Connector.cpp \
+					src/ConfigHelper.cpp \
 					src/Configuration.cpp \
 					src/Manager.cpp \
 					src/Request.cpp \
