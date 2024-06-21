@@ -30,20 +30,33 @@ int main(void) {
     //     "\r\n";
     // POST message test / transfer-encoding: chunked
 
-    std::string requestMessage =
-        "POST /api/v1/resources HTTP/1.1\r\n"
-        "Host: www.example.com\r\n"
-        "User-Agent: CustomClient/1.0\r\n"
-        "Content-Type: application/x-www-form-urlencoded\r\n"
-        "Content-Length: 38\r\n"
-        "Connection: close\r\n"
-        "Accept: */*\r\n"
-        "Accept-Encoding: gzip, deflate, br\r\n"
-        "Accept-Language: en-US,en;q=0.9\r\n"
-        "\r\n"
-        "param1=value1&param2=value2&param3=value3";
+    // std::string requestMessage =
+    //     "POST /api/v1/resources HTTP/1.1\r\n"
+    //     "Host: www.example.com\r\n"
+    //     "User-Agent: CustomClient/1.0\r\n"
+    //     "Content-Type: application/x-www-form-urlencoded\r\n"
+    //     "content-length: 38\r\n"
+    //     "Connection: close\r\n"
+    //     "Accept: */*\r\n"
+    //     "Accept-Encoding: gzip, deflate, br\r\n"
+    //     "Accept-Language: en-US,en;q=0.9\r\n"
+    //     "\r\n"
+    //     "param1=value1&param2=value2&param3=value3";
     // POST message test / content-length
 
+    std::string requestMessage =
+        "POST / HTTP/1.1\r\n"
+        "Content-Type: text/plain\r\n"
+        "User-Agent: PostmanRuntime/7.39.0\r\n"
+        "Accept: */*\r\n"
+        "Cache-Control: no-cache\r\n"
+        "Postman-Token: 3fb5a8f3-eae5-4a77-9e42-8730f853ac5e\r\n"
+        "Host: localhost:8080\r\n"
+        "Accept-Encoding: gzip, deflate, br\r\n"
+        "Connection: keep-alive\r\n"
+        "Content-Length: 5\r\n"
+        "\r\n"
+        "hello";
     // std::string requestMessage =
     //     "GET /? HTTP/1.1\r\nHost: localhost:8080\r\nConnection: "
     //     "keep-alive\r\nCache-Control: max-age=0\r\nsec-ch-ua: "

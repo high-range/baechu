@@ -131,9 +131,6 @@ void Request::messageParse(std::string& requestMessage,
                     state = FieldContent;
                 } else if (isObsFold(begin)) {
                     state = ObsFold;
-                } else if (isCRLF(begin) && isCRLF(begin + 2)) {
-                    state = HeaderEnd;
-                    begin += 2;
                 } else if (isCRLF(begin)) {
                     if (requestData.header[fieldname].empty()) {
                         requestData.header[fieldname] =
@@ -145,8 +142,11 @@ void Request::messageParse(std::string& requestMessage,
                     std::cout << fieldvalue << std::endl;
                     fieldname = "";
                     fieldvalue = "";
-                    state = FieldName;
                     begin += 2;
+                    if (isCRLF(begin))
+                        state = HeaderEnd;
+                    else
+                        state = FieldName;
                 } else
                     throw ResponseData(400);
                 break;
