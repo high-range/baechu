@@ -10,38 +10,38 @@ using namespace std;
 int main(void) {
     RequestData requestData;
     Configuration config = Configuration::getInstance();
-    std::string requestMessage =
-        "POST /upload?asdf HTTP/1.1\r\n"
-        "Host: www.example.com\r\n"
-        "User-Agent: CustomClient/1.0\r\n"
-        "Content-Type: application/x-www-form-urlencoded\r\n"
-        "Transfer-Encoding: chunked\r\n"
-        "Connection: close\r\n"
-        "\r\n"
-        "7\r\n"
-        "param1=\r\n"
-        "8\r\n"
-        "value1&pa\r\n"
-        "6\r\n"
-        "ram2=\r\n"
-        "6\r\n"
-        "value2\r\n"
-        "0\r\n"
-        "\r\n";
-    // POST message test / transfer-encoding: chunked
-
     // std::string requestMessage =
-    //     "POST /api/v1/resources HTTP/1.1\r\n"
+    //     "POST /upload?asdf HTTP/1.1\r\n"
     //     "Host: www.example.com\r\n"
     //     "User-Agent: CustomClient/1.0\r\n"
     //     "Content-Type: application/x-www-form-urlencoded\r\n"
-    //     "Content-Length: 38\r\n"
+    //     "Transfer-Encoding: chunked\r\n"
     //     "Connection: close\r\n"
-    //     "Accept: */*\r\n"
-    //     "Accept-Encoding: gzip, deflate, br\r\n"
-    //     "Accept-Language: en-US,en;q=0.9\r\n"
     //     "\r\n"
-    //     "param1=value1&param2=value2&param3=value3";
+    //     "7\r\n"
+    //     "param1=\r\n"
+    //     "8\r\n"
+    //     "value1&pa\r\n"
+    //     "6\r\n"
+    //     "ram2=\r\n"
+    //     "6\r\n"
+    //     "value2\r\n"
+    //     "0\r\n"
+    //     "\r\n";
+    // POST message test / transfer-encoding: chunked
+
+    std::string requestMessage =
+        "POST /api/v1/resources HTTP/1.1\r\n"
+        "Host: www.example.com\r\n"
+        "User-Agent: CustomClient/1.0\r\n"
+        "Content-Type: application/x-www-form-urlencoded\r\n"
+        "Content-Length: 38\r\n"
+        "Connection: close\r\n"
+        "Accept: */*\r\n"
+        "Accept-Encoding: gzip, deflate, br\r\n"
+        "Accept-Language: en-US,en;q=0.9\r\n"
+        "\r\n"
+        "param1=value1&param2=value2&param3=value3";
     // POST message test / content-length
 
     // std::string requestMessage =
