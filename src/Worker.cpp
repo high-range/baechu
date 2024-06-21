@@ -239,17 +239,30 @@ ResponseData Worker::doDelete(const RequestData& request) {
     return ResponseData(404);
 }
 
+static std::string lower(std::string s) {
+    for (size_t i = 0; i < s.length(); i++) {
+        if (isupper(s[i])) {
+            s[i] = tolower(s[i]);
+        }
+    }
+    return s;
+}
+
 ResponseData Worker::handleDynamicRequest() {
     std::istringstream response(runCgi());
 
     Headers headers;
     for (std::string line; std::getline(response, line);) {
+        if (line.back() == '\r') {
+            line.pop_back();
+        }
+
         if (line.empty()) {
             break;
         }
 
         size_t colonPos = line.find(':');
-        std::string key = line.substr(0, colonPos);
+        std::string key = lower(line.substr(0, colonPos));
 
         if (line[colonPos + 1] == ' ') {
             headers[key] = line.substr(colonPos + 2);
@@ -259,9 +272,9 @@ ResponseData Worker::handleDynamicRequest() {
     }
 
     int statusCode = 200;
-    if (headers.find("Status") != headers.end()) {
-        statusCode = std::atoi(headers["Status"].c_str());
-        headers.erase("Status");
+    if (headers.find("status") != headers.end()) {
+        statusCode = std::atoi(headers["status"].c_str());
+        headers.erase("status");
     }
 
     std::string body;

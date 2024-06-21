@@ -2,17 +2,18 @@
 
 import cgi
 
+print("Content-Type: text/html")
+print()
+
 form = cgi.FieldStorage()
 
-a = form.getvalue("a")
-b = form.getvalue("b")
+a = int(form.getvalue("a", 0))
+b = int(form.getvalue("b", 0))
 
-result = int(a) * int(b)
-
-print(
-    f"""
-Content-type: text/plain
-
-Result: {result}
-"""
-)
+print("<html>")
+print("<head><title>Multiplication Result</title></head>")
+print("<body>")
+print("<h1>Multiplication Result:</h1>")
+print("<p>{} * {} = {}</p>".format(a, b, a * b))
+print("</body>")
+print("</html>")
