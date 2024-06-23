@@ -136,42 +136,40 @@ std::string doGetFile(const std::string& fullPath) {
     return buffer.str();
 }
 
-std::string getFileLink(const std::string& hostname, int port,
-                        const std::string& dirname,
-                        const std::string& filename) {
-    std::ostringstream ss;
-    ss << "<p><a href=\"http://" << hostname << ":" << port << dirname
-       << filename << "\">" << filename << "</a></p>\n";
-    return ss.str();
-}
-
-std::string generateHTML(const std::string& fullPath, const std::string& host,
-                         int port, const std::string& path) {
+std::string doGetDirectory(const std::string& fullPath,
+                           const std::string& path) {
     DIR* dir = opendir(fullPath.c_str());
     if (dir == nullptr) {
         throw "could not open directory";
     }
 
     std::ostringstream ss;
-    ss << "<!DOCTYPE html>\n<html>\n<head>\n<title>Index of " << path
-       << "</title>\n</head>\n<body>\n<h1>Index of " << path << "</h1>\n";
+    ss << "<html>" << "\r\n";
+    ss << "<head><title>Index of " << path << "</title></head>" << "\r\n";
+    ss << "<body>" << "\r\n";
+    ss << "<h1>Index of " << path << "</h1>";
 
-    for (struct dirent* dirEntry = readdir(dir); dirEntry;
-         dirEntry = readdir(dir)) {
-        ss << getFileLink(host, port, path, dirEntry->d_name);
+    ss << "<hr><pre>";
+    ss << "<a href=\"../\">../</a>" << "\r\n";
+    for (struct dirent* entry = readdir(dir); entry; entry = readdir(dir)) {
+        std::string name = entry->d_name;
+        if (name == "." || name == "..") {
+            continue;
+        }
+        if (entry->d_type == DT_DIR) {
+            name += "/";
+        }
+
+        ss << "<a href=\"" << name << "\">" << name << "</a>" << "\r\n";
     }
+    ss << "</pre><hr>";
 
-    ss << "</body>\n</html>\n";
+    ss << "</body>" << "\r\n";
+    ss << "</html>" << "\r\n";
+
     closedir(dir);
 
     return ss.str();
-}
-
-std::string doGetDirectory(const std::string& fullPath, const std::string& host,
-                           const std::string& path) {
-    std::string domain = host.substr(0, host.find(':'));
-    std::string port = host.substr(host.find(':') + 1);
-    return generateHTML(fullPath, domain, std::stoi(port), path);
 }
 
 ResponseData Worker::doGet(const RequestData& request) {
@@ -188,7 +186,7 @@ ResponseData Worker::doGet(const RequestData& request) {
         return ResponseData(404, "Not Found: " + std::string(e.what()));
     }
 
-    return ResponseData(200, doGetDirectory(fullPath, host, request.getPath()));
+    return ResponseData(200, doGetDirectory(fullPath, request.getPath()));
 }
 
 std::string generateFilename() {
