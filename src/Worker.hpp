@@ -41,8 +41,8 @@ class Worker {
 
 // Utility functions used in Worker.cpp
 bool isFile(const std::string& fullPath);
-std::string doGetFile(const std::string& fullPath);
-std::string doGetDirectory(const std::string& fullPath,
-                           const std::string& path);
+ResponseData doGetFile(const std::string& fullPath);
+ResponseData doGetDirectory(const std::string& fullPath,
+                            const std::string& path);
 std::string generateFilename();
 bool saveFile(const std::string& dir, const std::string& content);
