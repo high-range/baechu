@@ -283,10 +283,11 @@ ResponseData Worker::doDelete(const RequestData& request) {
 }
 
 ResponseData Worker::handleDynamicRequest() {
-    std::istringstream response(runCgi());
+    std::string response = runCgi();
+    std::istringstream ss(response);
 
     Headers headers;
-    for (std::string line; std::getline(response, line);) {
+    for (std::string line; std::getline(ss, line);) {
         if (line.back() == '\r') {
             line.pop_back();
         }
@@ -312,7 +313,7 @@ ResponseData Worker::handleDynamicRequest() {
     }
 
     std::string body;
-    std::getline(response, body, '\0');
+    std::getline(ss, body, '\0');
 
     return ResponseData(statusCode, headers, body);
 }
