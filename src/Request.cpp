@@ -1,5 +1,8 @@
 #include "Request.hpp"
 
+#include <cstdlib>
+#include <sstream>
+
 #include "Configuration.hpp"
 #include "RequestData.hpp"
 #include "RequestUtility.hpp"
@@ -9,16 +12,18 @@ void Request::parseMessage(std::string& requestMessage,
                            RequestData& requestData) {
     State state;
     size_t queryStart;
-    std::string token, fieldname, fieldvalue;
+    std::string token;
+    std::string fieldname, fieldvalue;
+    std::string bodyHeaderName, bodyHeaderValue;
     uchar *begin, *end, input;
 
-    state = StartLineStart;
+    state = RequestLineStart;
     begin = reinterpret_cast<uchar*>(&requestMessage.front());
     end = reinterpret_cast<uchar*>(&requestMessage.back() + 1);
     while (begin != end) {
         input = *begin;
         switch (state) {
-            case StartLineStart:
+            case RequestLineStart:
                 if (RequestUtility::isTchar(input)) {
                     state = Method;
                 } else
@@ -34,7 +39,7 @@ void Request::parseMessage(std::string& requestMessage,
                 begin++;
                 break;
             case MethodEnd:
-                requestData.startLine.method = token;
+                requestData.setMethod(token);
                 token = "";
                 state = RequestTargetStart;
             case RequestTargetStart:
@@ -51,12 +56,12 @@ void Request::parseMessage(std::string& requestMessage,
                         token += *(++begin);
                     }
                 } else if (input == '?') {
-                    requestData.startLine.path = token;
+                    requestData.setPath(token);
                     token += input;
                     queryStart = token.size();
                     state = Query;
                 } else if (input == ' ') {
-                    requestData.startLine.path = token;
+                    requestData.setPath(token);
                     state = RequestTargetEnd;
                 } else
                     throw ResponseData(400);
@@ -71,21 +76,22 @@ void Request::parseMessage(std::string& requestMessage,
                         token += *(++begin);
                     }
                 } else if (input == ' ') {
-                    requestData.startLine.query = token.substr(queryStart);
+                    requestData.setPath(token.substr(queryStart));
                     state = RequestTargetEnd;
                 } else
                     throw ResponseData(400);
                 begin++;
                 break;
             case RequestTargetEnd:
-                requestData.startLine.requestTarget = token;
+                requestData.setRequestTarget(token);
                 token = "";
                 state = HTTPVersion;
                 break;
             case HTTPVersion:
                 if (RequestUtility::isHttpVersion(begin)) {
-                    requestData.startLine.version =
-                        RequestUtility::th_substr(begin, 0, 8);
+                    token = RequestUtility::th_substr(begin, 0, 8);
+                    requestData.setVersion(token);
+                    token = "";
                     begin += 8;
                     state = StartLineEnd;
                 } else
@@ -128,22 +134,12 @@ void Request::parseMessage(std::string& requestMessage,
                 } else if (RequestUtility::isObsFold(begin)) {
                     state = ObsFold;
                 } else if (RequestUtility::isCRLF(begin)) {
-                    if (requestData.header[fieldname].empty()) {
-                        requestData.header[fieldname] =
-                            RequestUtility::th_strtrim(fieldvalue, ' ');
-                    } else
-                        requestData.header[fieldname] +=
-                            ", " + RequestUtility::th_strtrim(fieldvalue, ' ');
-                    std::cout << fieldname << std::endl;
-                    std::cout << fieldvalue << std::endl;
+                    fieldvalue = RequestUtility::th_strtrim(fieldvalue, ' ');
+                    requestData.setHeader(fieldname, fieldvalue);
                     fieldname = "";
                     fieldvalue = "";
-                    state = FieldName;
                     begin += 2;
-                    if (RequestUtility::isCRLF(begin))
-                        state = HeaderEnd;
-                    else
-                        state = FieldName;
+                    state = HeaderEnd;
                 } else
                     throw ResponseData(400);
                 break;
@@ -163,36 +159,39 @@ void Request::parseMessage(std::string& requestMessage,
                 begin++;
                 break;
             case HeaderEnd:
-                begin += 2;
-                state = BodyStart;
+                if (RequestUtility::isCRLF(begin)) {
+                    begin += 2;
+                    state = BodyStart;
+                } else
+                    state = FieldName;
                 break;
             case BodyStart:
-                if (RequestUtility::doesExistContentLength(
-                        requestData.header) &&
-                    RequestUtility::doesExistTransferEncoding(
-                        requestData.header)) {
-                    throw ResponseData(400);
-                } else if (RequestUtility::doesExistContentLength(
-                               requestData.header)) {
+                bodyHeaderName = requestData.getBodyHeaderName();
+                if (bodyHeaderName == "content-length") {
                     state = ContentLength;
-                } else if (RequestUtility::doesExistTransferEncoding(
-                               requestData.header)) {
+                } else if (bodyHeaderName == "transfer-encoding") {
                     state = TransferEncoding;
-                } else
+                } else if (bodyHeaderName == "") {
                     state = BodyEnd;
+                } else
+                    throw ResponseData(400);
                 break;
             case ContentLength:
-                if (RequestUtility::doesValidContentLength(
-                        requestData.header["content-length"])) {
-                    requestData.body = parseBodyByContentLength(
-                        begin, requestData.header["content-length"]);
+                bodyHeaderValue = requestData.header[bodyHeaderName];
+                if (RequestUtility::doesValidContentLength(bodyHeaderValue)) {
+                    token = parseBodyByContentLength(begin, bodyHeaderValue);
+                    requestData.setBody(token);
+                    token = "";
                     state = BodyEnd;
                 } else
                     throw ResponseData(400);
                 break;
             case TransferEncoding:
-                if (requestData.header["transfer-encoding"] == "chunked") {
-                    requestData.body = parseBodyByTransferEncoding(begin, end);
+                bodyHeaderValue = requestData.header[bodyHeaderName];
+                if (bodyHeaderValue == "chunked") {
+                    token = parseBodyByTransferEncoding(begin, end);
+                    requestData.setBody(token);
+                    token = "";
                     state = BodyEnd;
                 } else
                     throw ResponseData(400);
@@ -206,12 +205,14 @@ void Request::parseMessage(std::string& requestMessage,
 std::string Request::parseBodyByContentLength(uchar* begin,
                                               std::string length) {
     std::istringstream bodyStream(std::string(reinterpret_cast<char*>(begin)));
-    long long bodyLength = std::stoll(length);  // stoll 함수 변경해야 함
-    std::string buffer(bodyLength, '\0');
+    Configuration config = Configuration::getInstance();
+    std::string buffer;
+    long long bodyLength = strtoll(length.c_str(), NULL, 10);
 
     if (bodyStream.fail()) {
         throw ResponseData(400);  // stream 생성 실패에 대한 throw
-    }
+    } else if (bodyLength < 0)
+        throw ResponseData(400);  // content-length가 음수일 때 throw
     bodyStream.read(&buffer[0], bodyLength);
     if (bodyStream.gcount() != bodyLength) {
         throw ResponseData(400);  // read error 로 인한 throw

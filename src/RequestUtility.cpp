@@ -111,11 +111,3 @@ bool RequestUtility::doesValidContentLength(const std::string& str) {
     }
     return true;
 }
-
-bool RequestUtility::doesExistContentLength(const Header& header) {
-    return header.find("content-length") != header.end();
-}
-
-bool RequestUtility::doesExistTransferEncoding(const Header& header) {
-    return header.find("transfer-encoding") != header.end();
-}

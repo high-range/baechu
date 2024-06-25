@@ -1,13 +1,13 @@
 #pragma once
 
-#include <iostream>
 #include <map>
+#include <string>
 
 typedef std::map<std::string, std::string> Header;
 typedef const unsigned char c_uchar;
 
 class RequestUtility {
-  public:
+  private:
     virtual ~RequestUtility() = 0;
     static bool isObsFold(c_uchar* str);
     static bool isWS(c_uchar c);
@@ -21,12 +21,12 @@ class RequestUtility {
                                  const size_t end);
     static std::string th_strtrim(const std::string& src, c_uchar target);
     static bool doesValidContentLength(const std::string& str);
-    static bool doesExistContentLength(const Header& header);
-    static bool doesExistTransferEncoding(const Header& header);
+
+    friend class Request;
 };
 
 enum State {
-    StartLineStart,
+    RequestLineStart,
     Method,
     MethodEnd,
     RequestTargetStart,
