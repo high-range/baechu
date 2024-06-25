@@ -27,7 +27,7 @@ class Webserv : public Connector {
                 // Check if it's a non-blocking mode error (temporary condition)
                 // or a genuine failure (permanent error)
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    std::cerr << "Data is not ready yet." << std::endl;
+                    // std::cerr << "Data is not ready yet." << std::endl;
                     break;
                 } else {
                     std::cerr
@@ -48,10 +48,13 @@ class Webserv : public Connector {
 
         // Process the request if it's non-empty
         if (!request.empty()) {
-            // TODO: Send "ip, port number, and number of bytes read" to Manager
+            // TODO: Send "ip, port number" to Manager.
+            // (Need to implement after Refactoring)
+            // sockaddr_in clientAddr = clientAddresses[client_fd];
+            // std::string ip_address = inet_ntoa(clientAddr.sin_addr);
+            // int port = ntohs(clientAddr.sin_port);
             std::string response =
                 Manager::run(request, Configuration::getInstance());
-
             if (send(client_fd, response.c_str(), response.size(), 0) < 0) {
                 std::cerr << "Failed to send response: " << strerror(errno)
                           << std::endl;

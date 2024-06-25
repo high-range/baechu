@@ -1,7 +1,9 @@
 #pragma once
 
+#include <netinet/in.h>
 #include <sys/event.h>
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -23,5 +25,6 @@ class Connector {
     void addEvent(int fd, int filter, int flags);
 
   protected:
+    std::map<int, sockaddr_in> clientAddresses;
     virtual void handleRequest(int client_fd) = 0;
 };
