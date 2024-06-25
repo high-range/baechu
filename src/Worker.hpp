@@ -28,6 +28,9 @@ class Worker {
 
     std::map<std::string, std::string> header;  // Response header
 
+    std::string domain;
+    std::string port;
+
     bool isStatic;
     std::string pathInfo;
     std::string scriptName;

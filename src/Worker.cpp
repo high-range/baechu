@@ -33,6 +33,17 @@ static std::string lower(std::string s) {
 Worker::Worker(const RequestData& request) : request(request) {
     header = request.getHeader();
 
+    std::string host = header[HOST_HEADER];
+
+    size_t colonPos = host.find(':');
+    if (colonPos != std::string::npos) {
+        domain = host.substr(0, colonPos);
+        port = host.substr(colonPos + 1);
+    } else {
+        domain = host;
+        port = "80";
+    }
+
     isStatic = true;
 
     std::string path = request.getPath();
@@ -55,19 +66,6 @@ Worker::Worker(const RequestData& request) : request(request) {
 std::string Worker::getFullPath(const std::string& host,
                                 const std::string& path) {
     Configuration& config = Configuration::getInstance();
-
-    // Extract domain and port
-    std::string domain;
-    std::string port;
-    size_t colonPos = host.find(':');
-    if (colonPos != std::string::npos) {
-        domain = host.substr(0, colonPos);
-        port = host.substr(colonPos + 1);
-    } else {
-        // Handle case where no port is specified
-        domain = "localhost";
-        port = "8080";  // Default to port 8080 if no port is specified
-    }
 
     std::string rootDirectory = config.getRootDirectory(domain, port, path);
 
@@ -378,7 +376,7 @@ CgiEnvMap Worker::createCgiEnvMap() {
     envMap["REQUEST_METHOD"] = request.getMethod();
     envMap["SCRIPT_NAME"] = scriptName;
     envMap["SERVER_NAME"] = "";  // TODO: Configuration::Block::name
-    envMap["SERVER_PORT"] = "";  // TODO: port
+    envMap["SERVER_PORT"] = port;
     envMap["SERVER_PROTOCOL"] = VERSION;
     envMap["SERVER_SOFTWARE"] = SERVER_SOFTWARE;
     return envMap;
