@@ -20,6 +20,8 @@ std::string Response::messageGenerate(ResponseData data) {
        << reasonPhrases[data.statusCode] << "\r\n";
 
     Headers headers = data.headers;
+    headers["content-length"] = std::to_string(data.body.length());
+
     for (Headers::iterator it = headers.begin(); it != headers.end(); it++) {
         ss << camel(it->first) << ": " << it->second << "\r\n";
     }

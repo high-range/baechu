@@ -36,6 +36,15 @@ static bool _isDynamicRequest(const std::string& path) {
 
 // END FOR DEVELOPMENT
 
+static std::string lower(std::string s) {
+    for (size_t i = 0; i < s.length(); i++) {
+        if (isupper(s[i])) {
+            s[i] = tolower(s[i]);
+        }
+    }
+    return s;
+}
+
 Worker::Worker(const RequestData& request) : request(request) {
     header = request.getHeader();
 }
@@ -123,55 +132,89 @@ bool isFile(const std::string& fullPath) {
         fullPath);  // 알 수 없는 파일 유형인 경우 예외 발생
 }
 
-std::string doGetFile(const std::string& fullPath) {
+ResponseData doGetFile(const std::string& fullPath) {
     std::ifstream file(fullPath);
     if (!file.is_open()) {
         throw "file not found";
     }
 
-    std::ostringstream buffer;
-    buffer << file.rdbuf();
+    std::ostringstream ss;
+    ss << file.rdbuf();
     file.close();
 
-    return buffer.str();
+    std::string ext = fullPath.substr(fullPath.rfind(".") + 1);
+    ext = lower(ext);
+
+    std::string type;
+    if (ext == "html" || ext == "htm") {
+        type = "text/html; charset=utf-8";
+    } else if (ext == "css") {
+        type = "text/css; charset=utf-8";
+    } else if (ext == "js") {
+        type = "application/javascript";
+    } else if (ext == "txt") {
+        type = "text/plain; charset=utf-8";
+    } else if (ext == "json") {
+        type = "application/json";
+    } else if (ext == "xml") {
+        type = "text/xml; charset=utf-8";
+    } else if (ext == "jpeg" || ext == "jpg") {
+        type = "image/jpeg";
+    } else if (ext == "png") {
+        type = "image/png";
+    } else if (ext == "gif") {
+        type = "image/gif";
+    } else if (ext == "svg") {
+        type = "image/svg+xml";
+    } else if (ext == "pdf") {
+        type = "application/pdf";
+    } else {
+        type = "application/octet-stream";
+    }
+
+    Headers headers;
+    headers[CONTENT_TYPE_HEADER] = type;
+
+    return ResponseData(200, headers, ss.str());
 }
 
-std::string getFileLink(const std::string& hostname, int port,
-                        const std::string& dirname,
-                        const std::string& filename) {
-    std::ostringstream ss;
-    ss << "<p><a href=\"http://" << hostname << ":" << port << dirname
-       << filename << "\">" << filename << "</a></p>\n";
-    return ss.str();
-}
-
-std::string generateHTML(const std::string& fullPath, const std::string& host,
-                         int port, const std::string& path) {
+ResponseData doGetDirectory(const std::string& fullPath,
+                            const std::string& path) {
     DIR* dir = opendir(fullPath.c_str());
     if (dir == nullptr) {
         throw "could not open directory";
     }
 
     std::ostringstream ss;
-    ss << "<!DOCTYPE html>\n<html>\n<head>\n<title>Index of " << path
-       << "</title>\n</head>\n<body>\n<h1>Index of " << path << "</h1>\n";
+    ss << "<html>" << "\r\n";
+    ss << "<head><title>Index of " << path << "</title></head>" << "\r\n";
+    ss << "<body>" << "\r\n";
+    ss << "<h1>Index of " << path << "</h1>";
 
-    for (struct dirent* dirEntry = readdir(dir); dirEntry;
-         dirEntry = readdir(dir)) {
-        ss << getFileLink(host, port, path, dirEntry->d_name);
+    ss << "<hr><pre>";
+    ss << "<a href=\"../\">../</a>" << "\r\n";
+    for (struct dirent* entry = readdir(dir); entry; entry = readdir(dir)) {
+        std::string name = entry->d_name;
+        if (name == "." || name == "..") {
+            continue;
+        }
+        if (entry->d_type == DT_DIR) {
+            name += "/";
+        }
+
+        ss << "<a href=\"" << name << "\">" << name << "</a>" << "\r\n";
     }
+    ss << "</pre><hr>";
 
-    ss << "</body>\n</html>\n";
+    ss << "</body>" << "\r\n";
+    ss << "</html>" << "\r\n";
+
     closedir(dir);
 
-    return ss.str();
-}
+    Headers headers;
+    headers[CONTENT_TYPE_HEADER] = "text/html; charset=utf-8";
 
-std::string doGetDirectory(const std::string& fullPath, const std::string& host,
-                           const std::string& path) {
-    std::string domain = host.substr(0, host.find(':'));
-    std::string port = host.substr(host.find(':') + 1);
-    return generateHTML(fullPath, domain, std::stoi(port), path);
+    return ResponseData(200, headers, ss.str());
 }
 
 ResponseData Worker::doGet(const RequestData& request) {
@@ -180,7 +223,7 @@ ResponseData Worker::doGet(const RequestData& request) {
 
     try {
         if (isFile(fullPath)) {
-            return ResponseData(200, doGetFile(fullPath));
+            return doGetFile(fullPath);
         }
     } catch (const std::runtime_error& e) {
         std::cerr << e.what() << std::endl;
@@ -188,7 +231,7 @@ ResponseData Worker::doGet(const RequestData& request) {
         return ResponseData(404, "Not Found: " + std::string(e.what()));
     }
 
-    return ResponseData(200, doGetDirectory(fullPath, host, request.getPath()));
+    return doGetDirectory(fullPath, request.getPath());
 }
 
 std::string generateFilename() {
@@ -239,20 +282,12 @@ ResponseData Worker::doDelete(const RequestData& request) {
     return ResponseData(404);
 }
 
-static std::string lower(std::string s) {
-    for (size_t i = 0; i < s.length(); i++) {
-        if (isupper(s[i])) {
-            s[i] = tolower(s[i]);
-        }
-    }
-    return s;
-}
-
 ResponseData Worker::handleDynamicRequest() {
-    std::istringstream response(runCgi());
+    std::string response = runCgi();
+    std::istringstream ss(response);
 
     Headers headers;
-    for (std::string line; std::getline(response, line);) {
+    for (std::string line; std::getline(ss, line);) {
         if (line.back() == '\r') {
             line.pop_back();
         }
@@ -278,7 +313,7 @@ ResponseData Worker::handleDynamicRequest() {
     }
 
     std::string body;
-    std::getline(response, body, '\0');
+    std::getline(ss, body, '\0');
 
     return ResponseData(statusCode, headers, body);
 }
