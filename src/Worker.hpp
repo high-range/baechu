@@ -28,7 +28,10 @@ class Worker {
 
     std::map<std::string, std::string> header;  // Response header
 
-    bool isStaticRequest(const RequestData& request);
+    bool isStatic;
+    std::string pathInfo;
+    std::string scriptName;
+
     ResponseData handleStaticRequest(const RequestData& request);
     ResponseData doGet(const RequestData& request);
     ResponseData doPost(const RequestData& request);
