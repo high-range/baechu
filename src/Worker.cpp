@@ -33,7 +33,7 @@ static std::string lower(std::string s) {
 Worker::Worker(const RequestData& request) : request(request) {
     header = request.getHeader();
 
-    std::string host = header[HOST_HEADER];
+    host = header[HOST_HEADER];
 
     size_t colonPos = host.find(':');
     if (colonPos != std::string::npos) {
@@ -63,8 +63,7 @@ Worker::Worker(const RequestData& request) : request(request) {
     }
 }
 
-std::string Worker::getFullPath(const std::string& host,
-                                const std::string& path) {
+std::string Worker::getFullPath(const std::string& path) {
     Configuration& config = Configuration::getInstance();
 
     std::string rootDirectory = config.getRootDirectory(domain, port, path);
@@ -94,7 +93,7 @@ std::string Worker::getFullPath(const std::string& host,
 ResponseData Worker::handleStaticRequest(const RequestData& request) {
     const std::string& method = request.getMethod();
 
-    if (header[HOST_HEADER].empty()) {
+    if (host.empty()) {
         return ResponseData(400);
     } else if (method == "GET") {
         return doGet(request);
@@ -210,8 +209,7 @@ ResponseData doGetDirectory(const std::string& fullPath,
 }
 
 ResponseData Worker::doGet(const RequestData& request) {
-    std::string host = header[HOST_HEADER];
-    std::string fullPath = getFullPath(host, request.getPath());
+    std::string fullPath = getFullPath(request.getPath());
 
     try {
         if (isFile(fullPath)) {
@@ -250,8 +248,7 @@ bool saveFile(const std::string& dir, const std::string& content) {
 }
 
 ResponseData Worker::doPost(const RequestData& request) {
-    std::string host = header[HOST_HEADER];
-    std::string fullPath = getFullPath(host, request.getPath());
+    std::string fullPath = getFullPath(request.getPath());
     std::string content = request.getBody();
 
     if (saveFile(fullPath, content)) {
@@ -261,8 +258,7 @@ ResponseData Worker::doPost(const RequestData& request) {
 }
 
 ResponseData Worker::doDelete(const RequestData& request) {
-    std::string host = header[HOST_HEADER];
-    std::string fullPath = getFullPath(host, request.getPath());
+    std::string fullPath = getFullPath(request.getPath());
 
     struct stat buffer;
     if (stat(fullPath.c_str(), &buffer) == 0) {
@@ -336,7 +332,7 @@ std::string Worker::runCgi() {
         dup2(fds[1], STDOUT_FILENO);
         close(fds[1]);
 
-        std::string fullPath = getFullPath(header[HOST_HEADER], scriptName);
+        std::string fullPath = getFullPath(scriptName);
 
         CgiEnvMap envMap = createCgiEnvMap();
         char** envp = makeEnvp(envMap);

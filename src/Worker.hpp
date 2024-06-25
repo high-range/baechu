@@ -28,6 +28,7 @@ class Worker {
 
     std::map<std::string, std::string> header;  // Response header
 
+    std::string host;
     std::string domain;
     std::string port;
 
@@ -39,7 +40,7 @@ class Worker {
     ResponseData doGet(const RequestData& request);
     ResponseData doPost(const RequestData& request);
     ResponseData doDelete(const RequestData& request);
-    std::string getFullPath(const std::string& host, const std::string& path);
+    std::string getFullPath(const std::string& path);
     ResponseData handleDynamicRequest();
     CgiEnvMap createCgiEnvMap();
     std::string runCgi();
