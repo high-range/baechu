@@ -32,12 +32,12 @@ class RequestData {
     void setVersion(const std::string& version);
     void setHeader(const std::string& key, const std::string& value);
     void setBody(const std::string& body);
-    void setPort(const std::string& port);
-    void setIP(const std::string& ip);
     const std::string getBodyHeaderName();
     // RequestData에 대한 setter 함수 정의
 
   public:
+    void setPort(const std::string& port);
+    void setIP(const std::string& ip);
     std::string getMethod() const;
     std::string getRequestTarget() const;
     std::string getPath() const;
