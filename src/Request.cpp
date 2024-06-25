@@ -138,8 +138,8 @@ void Request::messageParse(std::string& requestMessage,
                     } else
                         requestData.header[fieldname] +=
                             ", " + th_strtrim(fieldvalue, ' ');
-                    std::cout << fieldname << std::endl;
-                    std::cout << fieldvalue << std::endl;
+                    // std::cout << fieldname << std::endl;
+                    // std::cout << fieldvalue << std::endl;
                     fieldname = "";
                     fieldvalue = "";
                     begin += 2;
