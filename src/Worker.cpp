@@ -17,22 +17,7 @@
 // FOR DEVELOPMENT
 
 static std::string _rootDirectory = std::string(getenv("PWD"));
-
-static const char* _cgiDirectoriesArray[] = {"/test/cgi-bin"};
-static std::vector<std::string> _cgiDirectories(
-    _cgiDirectoriesArray,
-    _cgiDirectoriesArray +
-        sizeof(_cgiDirectoriesArray) / sizeof(_cgiDirectoriesArray[0]));
-
-static bool _isDynamicRequest(const std::string& path) {
-    for (std::vector<std::string>::iterator it = _cgiDirectories.begin();
-         it != _cgiDirectories.end(); it++) {
-        if (path.find(*it) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
+static std::string _cgiExtension = ".py";
 
 // END FOR DEVELOPMENT
 
@@ -47,6 +32,24 @@ static std::string lower(std::string s) {
 
 Worker::Worker(const RequestData& request) : request(request) {
     header = request.getHeader();
+
+    isStatic = true;
+
+    std::string path = request.getPath();
+    size_t dotPos = path.rfind('.');
+    if (dotPos != std::string::npos) {
+        size_t dirPos = path.find('/', dotPos);
+        if (dirPos == std::string::npos) {
+            dirPos = path.length();
+        }
+
+        std::string ext = path.substr(dotPos, dirPos - dotPos);
+        if (ext == _cgiExtension) {
+            isStatic = false;
+            pathInfo = path.substr(dirPos);
+            scriptName = path.substr(0, dirPos);
+        }
+    }
 }
 
 std::string Worker::getFullPath(const std::string& host,
@@ -88,15 +91,6 @@ std::string Worker::getFullPath(const std::string& host,
     // std::cout << "Root directory: " << rootDirectory << std::endl;
     // std::cout << "Full path: " << fullPath << std::endl;
     return fullPath;
-}
-
-bool Worker::isStaticRequest(const RequestData& request) {
-    if (_isDynamicRequest(request.getPath())) {
-        return false;
-    }
-
-    const std::string& method = request.getMethod();
-    return (method == GET || method == POST || method == DELETE);
 }
 
 ResponseData Worker::handleStaticRequest(const RequestData& request) {
@@ -344,8 +338,7 @@ std::string Worker::runCgi() {
         dup2(fds[1], STDOUT_FILENO);
         close(fds[1]);
 
-        std::string fullPath =
-            getFullPath(header[HOST_HEADER], request.getPath());
+        std::string fullPath = getFullPath(header[HOST_HEADER], scriptName);
 
         CgiEnvMap envMap = createCgiEnvMap();
         char** envp = makeEnvp(envMap);
@@ -375,24 +368,24 @@ CgiEnvMap Worker::createCgiEnvMap() {
     envMap["CONTENT_LENGTH"] = header[CONTENT_LENGTH_HEADER];
     envMap["CONTENT_TYPE"] = header[CONTENT_TYPE_HEADER];
     envMap["GATEWAY_INTERFACE"] = GATEWAY_INTERFACE;
-    envMap["PATH_INFO"] = "";
-    envMap["PATH_TRANSLATED"] = "";
-    envMap["QUERY_STRING"] = "";
-    envMap["REMOTE_ADDR"] = "";
+    envMap["PATH_INFO"] = pathInfo;
+    envMap["PATH_TRANSLATED"] = "";  // TODO: rootDir + pathInfo
+    envMap["QUERY_STRING"] = request.getQuery();
+    envMap["REMOTE_ADDR"] = "";  // TODO: client address
     envMap["REMOTE_HOST"] = "";
     envMap["REMOTE_IDENT"] = "";
     envMap["REMOTE_USER"] = "";
-    envMap["REQUEST_METHOD"] = "";
-    envMap["SCRIPT_NAME"] = "";
-    envMap["SERVER_NAME"] = "";
-    envMap["SERVER_PORT"] = "";
+    envMap["REQUEST_METHOD"] = request.getMethod();
+    envMap["SCRIPT_NAME"] = scriptName;
+    envMap["SERVER_NAME"] = "";  // TODO: Configuration::Block::name
+    envMap["SERVER_PORT"] = "";  // TODO: port
     envMap["SERVER_PROTOCOL"] = VERSION;
     envMap["SERVER_SOFTWARE"] = SERVER_SOFTWARE;
     return envMap;
 }
 
 ResponseData Worker::handleRequest() {
-    if (isStaticRequest(request)) {
+    if (isStatic) {
         return handleStaticRequest(request);
     }
     return handleDynamicRequest();
