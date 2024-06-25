@@ -94,3 +94,23 @@ std::string trim(const std::string& str) {
     return str.substr(first,
                       (last - first + 1));  // 시작과 끝 사이의 부분 문자열 반환
 }
+
+int countMatchingPrefixLength(const std::string& location,
+                              const std::string& request_location) {
+    int count = 0;
+    size_t i = 0;
+    for (i = 0; i < location.length() && i < request_location.length(); i++) {
+        if (location[i] == request_location[i]) {
+            count++;
+        } else {
+            break;
+        }
+    }
+    if (i == request_location.length()) {
+        while (i < location.length()) {
+            count++;
+            i++;
+        }
+    }
+    return count;
+}
