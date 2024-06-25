@@ -6,16 +6,14 @@
 #include "Response.hpp"
 #include "Worker.hpp"
 
-std::string Manager::run(std::string requestMessage,
-                         const Configuration& configuration) {
+std::string Manager::run(std::string requestMessage) {
     try {
-        RequestData requestData;
         if (requestMessage.empty()) {
             throw ResponseData(400);
         }
+        RequestData requestData;
 
-        Request::messageParse(requestMessage, requestData, configuration);
-
+        Request::parseMessage(requestMessage, requestData);
         ResponseData responseData = Worker(requestData).handleRequest();
 
         return (Response::messageGenerate(responseData));
