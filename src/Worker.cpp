@@ -17,7 +17,14 @@
 // FOR DEVELOPMENT
 
 static std::string _rootDirectory = std::string(getenv("PWD"));
-static std::string _cgiExtension = ".py";
+
+static std::vector<std::string> _getCgiExtensions() {
+    std::vector<std::string> cgiExtensions;
+    cgiExtensions.push_back(".py");
+    cgiExtensions.push_back(".pl");
+    return cgiExtensions;
+}
+static std::vector<std::string> _cgiExtensions = _getCgiExtensions();
 
 // END FOR DEVELOPMENT
 
@@ -55,10 +62,16 @@ Worker::Worker(const RequestData& request) : request(request) {
         }
 
         std::string ext = path.substr(dotPos, dirPos - dotPos);
-        if (ext == _cgiExtension) {
-            isStatic = false;
-            pathInfo = path.substr(dirPos);
-            scriptName = path.substr(0, dirPos);
+        ext = lower(ext);
+
+        for (std::vector<std::string>::iterator it = _cgiExtensions.begin();
+             it != _cgiExtensions.end(); it++) {
+            if (ext == *it) {
+                isStatic = false;
+                pathInfo = path.substr(dirPos);
+                scriptName = path.substr(0, dirPos);
+                break;
+            }
         }
     }
 }
