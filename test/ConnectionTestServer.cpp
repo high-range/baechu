@@ -22,8 +22,7 @@ class Webserv : public Connector {
         }
 
         std::string request(buffer, bytes_read);
-        std::string response =
-            Manager::run(request, Configuration::getInstance());
+        std::string response = Manager::run(request, 8080, "");
         send(client_fd, response.c_str(), response.size(), 0);
         std::cout << "Response sent" << std::endl;
     }

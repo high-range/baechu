@@ -63,7 +63,7 @@ int main(void) {
     // GET message test
 
     try {
-        Request::messageParse(requestMessage, requestData, config);
+        Request::parseMessage(requestMessage, requestData);
     } catch (ResponseData& response) {
         cout << response.statusCode << endl;
     }

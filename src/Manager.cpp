@@ -6,7 +6,7 @@
 #include "Response.hpp"
 #include "Worker.hpp"
 
-std::string Manager::run(std::string requestMessage) {
+std::string Manager::run(std::string requestMessage, int port, std::string ip) {
     try {
         if (requestMessage.empty()) {
             throw ResponseData(400);
