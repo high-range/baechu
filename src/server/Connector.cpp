@@ -95,8 +95,10 @@ void Connector::handleConnections() {
         for (int i = 0; i < nev; i++) {
             int fd = events[i].ident;
             if (fd == serverFd) {
-                int clientFd = accept(serverFd, nullptr, nullptr);
-                std::cout << clientFd << "\n";
+                sockaddr_in clientAddr;
+                socklen_t clientAddrLen = sizeof(clientAddr);
+                int clientFd = accept(serverFd, (struct sockaddr*)&clientAddr,
+                                      &clientAddrLen);
                 if (clientFd == -1) {
                     std::cerr
                         << "Failed to accept connection: " << strerror(errno)
@@ -105,6 +107,15 @@ void Connector::handleConnections() {
                 }
                 setNonBlocking(clientFd);
                 addEvent(clientFd, EVFILT_READ, EV_ADD);
+
+                // 클라이언트 주소 정보를 저장
+                clientAddresses[clientFd] = clientAddr;
+
+                // 클라이언트 IP 주소와 포트 번호 출력
+                std::string ip_address = inet_ntoa(clientAddr.sin_addr);
+                int port = ntohs(clientAddr.sin_port);
+                std::cout << "\nClient IP Address: " << ip_address << std::endl;
+                std::cout << "Client Port: " << port << std::endl;
             } else {
                 handleRequest(fd);
                 close(fd);

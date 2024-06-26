@@ -1,5 +1,7 @@
 #pragma once
 
+#include <netinet/in.h>
+
 #include <string>
 
 class Configuration;

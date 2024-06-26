@@ -22,10 +22,15 @@ class Webserv : public Connector {
             return;
         }
 
+        // prepare request, serverAddr, and clientAddr
         std::string request(buffer, bytes_read);
-        std::string response = Manager::run(request, RequestData());
-        // Need to add a parameter of type sockaddr_in
+        sockaddr_in serverAddr;
+        socklen_t serverAddrLen = sizeof(serverAddr);
+        getsockname(client_fd, (struct sockaddr*)&serverAddr, &serverAddrLen);
+        sockaddr_in clientAddr = clientAddresses[client_fd];
 
+        std::string response =
+            Manager::run(request, RequestData(serverAddr, clientAddr));
         send(client_fd, response.c_str(), response.size(), 0);
         std::cout << "Response sent" << std::endl;
     }
