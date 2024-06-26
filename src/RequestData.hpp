@@ -1,5 +1,7 @@
 #pragma once
 
+#include <netinet/in.h>
+
 #include <map>
 #include <utility>
 #include <vector>
@@ -25,6 +27,11 @@ class RequestData {
     } clientData;
     // client information
 
+    struct ServerData {
+        std::string port;
+        std::string ip;
+    } serverData;
+
     void setMethod(const std::string& method);
     void setRequestTarget(const std::string& requestTarget);
     void setPath(const std::string& path);
@@ -36,8 +43,8 @@ class RequestData {
     // RequestData에 대한 setter 함수 정의
 
   public:
-    void setPort(const std::string& port);
-    void setIP(const std::string& ip);
+    RequestData(sockaddr_in client, sockaddr_in host);
+    RequestData(){};  // for test (need to remove)
     std::string getMethod() const;
     std::string getRequestTarget() const;
     std::string getPath() const;
@@ -45,8 +52,10 @@ class RequestData {
     std::string getVersion() const;
     Header getHeader() const;
     std::string getBody() const;
-    std::string getPort() const;
-    std::string getIP() const;
+    std::string getServerPort() const;
+    std::string getServerIP() const;
+    std::string getClientPort() const;
+    std::string getClientIP() const;
     // RequestData에 대한 getter 함수 정의
 
     friend class Request;

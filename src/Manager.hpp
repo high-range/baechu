@@ -3,10 +3,10 @@
 #include <string>
 
 class Configuration;
+class RequestData;
 
 class Manager {
   public:
     virtual ~Manager() = 0;
-    static std::string run(std::string requestMessage, int port,
-                           std::string ip);
+    static std::string run(std::string requestMessage, RequestData requestData);
 };

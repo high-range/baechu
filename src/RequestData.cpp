@@ -1,5 +1,10 @@
 #include "RequestData.hpp"
 
+RequestData::RequestData(sockaddr_in serverAddr, sockaddr_in clientAddr) {
+    (void)serverAddr;
+    (void)clientAddr;
+}
+
 std::string RequestData::getMethod() const { return startLine.method; };
 std::string RequestData::getRequestTarget() const {
     return startLine.requestTarget;
@@ -9,8 +14,10 @@ std::string RequestData::getQuery() const { return startLine.query; };
 std::string RequestData::getVersion() const { return startLine.version; };
 Header RequestData::getHeader() const { return header; };
 std::string RequestData::getBody() const { return body; };
-std::string RequestData::getPort() const { return clientData.port; };
-std::string RequestData::getIP() const { return clientData.ip; };
+std::string RequestData::getServerPort() const { return serverData.port; };
+std::string RequestData::getServerIP() const { return serverData.ip; };
+std::string RequestData::getClientPort() const { return clientData.port; };
+std::string RequestData::getClientIP() const { return clientData.ip; };
 
 const std::string RequestData::getBodyHeaderName() {
     Header::iterator contentLength;
@@ -55,9 +62,3 @@ void RequestData::setHeader(const std::string& key, const std::string& value) {
 }
 
 void RequestData::setBody(const std::string& body) { this->body = body; }
-
-void RequestData::setPort(const std::string& port) {
-    this->clientData.port = port;
-}
-
-void RequestData::setIP(const std::string& ip) { this->clientData.ip = ip; }

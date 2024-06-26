@@ -6,6 +6,7 @@
 
 #include "Configuration.hpp"
 #include "Manager.hpp"
+#include "RequestData.hpp"
 #include "server/Connector.hpp"
 
 class Webserv : public Connector {
@@ -22,7 +23,9 @@ class Webserv : public Connector {
         }
 
         std::string request(buffer, bytes_read);
-        std::string response = Manager::run(request, 8080, "");
+        std::string response = Manager::run(request, RequestData());
+        // Need to add a parameter of type sockaddr_in
+
         send(client_fd, response.c_str(), response.size(), 0);
         std::cout << "Response sent" << std::endl;
     }
