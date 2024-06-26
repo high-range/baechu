@@ -131,9 +131,6 @@ void Request::messageParse(std::string& requestMessage,
                     state = FieldContent;
                 } else if (isObsFold(begin)) {
                     state = ObsFold;
-                } else if (isCRLF(begin) && isCRLF(begin + 2)) {
-                    state = HeaderEnd;
-                    begin += 2;
                 } else if (isCRLF(begin)) {
                     if (requestData.header[fieldname].empty()) {
                         requestData.header[fieldname] =
@@ -141,10 +138,15 @@ void Request::messageParse(std::string& requestMessage,
                     } else
                         requestData.header[fieldname] +=
                             ", " + th_strtrim(fieldvalue, ' ');
+                    // std::cout << fieldname << std::endl;
+                    // std::cout << fieldvalue << std::endl;
                     fieldname = "";
                     fieldvalue = "";
-                    state = FieldName;
                     begin += 2;
+                    if (isCRLF(begin))
+                        state = HeaderEnd;
+                    else
+                        state = FieldName;
                 } else
                     throw ResponseData(400);
                 break;
@@ -180,15 +182,15 @@ void Request::messageParse(std::string& requestMessage,
                 break;
             case ContentLength:
                 if (doesValidContentLength(
-                        requestData.header["Content-Length"])) {
+                        requestData.header["content-length"])) {
                     requestData.body = contentLengthBodyParse(
-                        begin, requestData.header["Content-Length"]);
+                        begin, requestData.header["content-length"]);
                     state = BodyEnd;
                 } else
                     throw ResponseData(400);
                 break;
             case TransferEncoding:
-                if (requestData.header["Transfer-Encoding"] == "chunked") {
+                if (requestData.header["transfer-encoding"] == "chunked") {
                     requestData.body = transferEncodingBodyParse(begin, end);
                     state = BodyEnd;
                 } else
@@ -465,10 +467,10 @@ bool Request::doesValidContentLength(const std::string& str) {
 
 bool Request::doesExistContentLength(
     const std::map<std::string, std::string>& header) {
-    return header.find("Content-Length") != header.end();
+    return header.find("content-length") != header.end();
 }
 
 bool Request::doesExistTransferEncoding(
     const std::map<std::string, std::string>& header) {
-    return header.find("Transfer-Encoding") != header.end();
+    return header.find("transfer-encoding") != header.end();
 }
