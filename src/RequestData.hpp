@@ -1,8 +1,10 @@
 #pragma once
 
+#include <arpa/inet.h>
 #include <netinet/in.h>
 
 #include <map>
+#include <string>
 #include <utility>
 #include <vector>
 

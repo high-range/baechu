@@ -1,8 +1,24 @@
 #include "RequestData.hpp"
 
+char* my_inet_ntoa(struct in_addr in) {
+    static char buffer[INET_ADDRSTRLEN];
+
+    unsigned char bytes[4];
+    bytes[0] = (in.s_addr) & 0xFF;
+    bytes[1] = (in.s_addr >> 8) & 0xFF;
+    bytes[2] = (in.s_addr >> 16) & 0xFF;
+    bytes[3] = (in.s_addr >> 24) & 0xFF;
+
+    snprintf(buffer, sizeof(buffer), "%u.%u.%u.%u", bytes[0], bytes[1],
+             bytes[2], bytes[3]);
+    return buffer;
+}
+
 RequestData::RequestData(sockaddr_in serverAddr, sockaddr_in clientAddr) {
-    (void)serverAddr;
-    (void)clientAddr;
+    serverData.ip = my_inet_ntoa(serverAddr.sin_addr);
+    serverData.port = std::to_string(ntohs(serverAddr.sin_port));
+    clientData.ip = my_inet_ntoa(clientAddr.sin_addr);
+    clientData.port = std::to_string(ntohs(clientAddr.sin_port));
 }
 
 std::string RequestData::getMethod() const { return startLine.method; };
