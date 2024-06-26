@@ -12,6 +12,10 @@ std::string Manager::run(std::string requestMessage, RequestData requestData) {
             throw ResponseData(400);
         }
 
+        // TODO: have to add serverAddr and clientAddr to requestData
+        (void)serverAddr;
+        (void)clientAddr;
+
         Request::parseMessage(requestMessage, requestData);
         ResponseData responseData = Worker(requestData).handleRequest();
 
