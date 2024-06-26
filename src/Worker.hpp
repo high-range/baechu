@@ -28,12 +28,19 @@ class Worker {
 
     std::map<std::string, std::string> header;  // Response header
 
-    bool isStaticRequest(const RequestData& request);
+    std::string host;
+    std::string domain;
+    std::string port;
+
+    bool isStatic;
+    std::string pathInfo;
+    std::string scriptName;
+
     ResponseData handleStaticRequest(const RequestData& request);
     ResponseData doGet(const RequestData& request);
     ResponseData doPost(const RequestData& request);
     ResponseData doDelete(const RequestData& request);
-    std::string getFullPath(const std::string& host, const std::string& path);
+    std::string getFullPath(const std::string& path);
     ResponseData handleDynamicRequest();
     CgiEnvMap createCgiEnvMap();
     std::string runCgi();

@@ -18,21 +18,13 @@
 
 static std::string _rootDirectory = std::string(getenv("PWD"));
 
-static const char* _cgiDirectoriesArray[] = {"/test/cgi-bin"};
-static std::vector<std::string> _cgiDirectories(
-    _cgiDirectoriesArray,
-    _cgiDirectoriesArray +
-        sizeof(_cgiDirectoriesArray) / sizeof(_cgiDirectoriesArray[0]));
-
-static bool _isDynamicRequest(const std::string& path) {
-    for (std::vector<std::string>::iterator it = _cgiDirectories.begin();
-         it != _cgiDirectories.end(); it++) {
-        if (path.find(*it) == 0) {
-            return true;
-        }
-    }
-    return false;
+static std::vector<std::string> _getCgiExtensions() {
+    std::vector<std::string> cgiExtensions;
+    cgiExtensions.push_back(".py");
+    cgiExtensions.push_back(".pl");
+    return cgiExtensions;
 }
+static std::vector<std::string> _cgiExtensions = _getCgiExtensions();
 
 // END FOR DEVELOPMENT
 
@@ -47,24 +39,45 @@ static std::string lower(std::string s) {
 
 Worker::Worker(const RequestData& request) : request(request) {
     header = request.getHeader();
-}
 
-std::string Worker::getFullPath(const std::string& host,
-                                const std::string& path) {
-    Configuration& config = Configuration::getInstance();
+    host = header[HOST_HEADER];
 
-    // Extract domain and port
-    std::string domain;
-    std::string port;
     size_t colonPos = host.find(':');
     if (colonPos != std::string::npos) {
         domain = host.substr(0, colonPos);
         port = host.substr(colonPos + 1);
     } else {
-        // Handle case where no port is specified
-        domain = "localhost";
-        port = "8080";  // Default to port 8080 if no port is specified
+        domain = host;
+        port = "80";
     }
+
+    isStatic = true;
+
+    std::string path = request.getPath();
+    size_t dotPos = path.rfind('.');
+    if (dotPos != std::string::npos) {
+        size_t dirPos = path.find('/', dotPos);
+        if (dirPos == std::string::npos) {
+            dirPos = path.length();
+        }
+
+        std::string ext = path.substr(dotPos, dirPos - dotPos);
+        ext = lower(ext);
+
+        for (std::vector<std::string>::iterator it = _cgiExtensions.begin();
+             it != _cgiExtensions.end(); it++) {
+            if (ext == *it) {
+                isStatic = false;
+                pathInfo = path.substr(dirPos);
+                scriptName = path.substr(0, dirPos);
+                break;
+            }
+        }
+    }
+}
+
+std::string Worker::getFullPath(const std::string& path) {
+    Configuration& config = Configuration::getInstance();
 
     std::string rootDirectory = config.getRootDirectory(domain, port, path);
 
@@ -90,19 +103,10 @@ std::string Worker::getFullPath(const std::string& host,
     return fullPath;
 }
 
-bool Worker::isStaticRequest(const RequestData& request) {
-    if (_isDynamicRequest(request.getPath())) {
-        return false;
-    }
-
-    const std::string& method = request.getMethod();
-    return (method == GET || method == POST || method == DELETE);
-}
-
 ResponseData Worker::handleStaticRequest(const RequestData& request) {
     const std::string& method = request.getMethod();
 
-    if (header[HOST_HEADER].empty()) {
+    if (host.empty()) {
         return ResponseData(400);
     } else if (method == "GET") {
         return doGet(request);
@@ -218,8 +222,7 @@ ResponseData doGetDirectory(const std::string& fullPath,
 }
 
 ResponseData Worker::doGet(const RequestData& request) {
-    std::string host = header[HOST_HEADER];
-    std::string fullPath = getFullPath(host, request.getPath());
+    std::string fullPath = getFullPath(request.getPath());
 
     try {
         if (isFile(fullPath)) {
@@ -258,8 +261,7 @@ bool saveFile(const std::string& dir, const std::string& content) {
 }
 
 ResponseData Worker::doPost(const RequestData& request) {
-    std::string host = header[HOST_HEADER];
-    std::string fullPath = getFullPath(host, request.getPath());
+    std::string fullPath = getFullPath(request.getPath());
     std::string content = request.getBody();
 
     if (saveFile(fullPath, content)) {
@@ -269,8 +271,7 @@ ResponseData Worker::doPost(const RequestData& request) {
 }
 
 ResponseData Worker::doDelete(const RequestData& request) {
-    std::string host = header[HOST_HEADER];
-    std::string fullPath = getFullPath(host, request.getPath());
+    std::string fullPath = getFullPath(request.getPath());
 
     struct stat buffer;
     if (stat(fullPath.c_str(), &buffer) == 0) {
@@ -344,8 +345,7 @@ std::string Worker::runCgi() {
         dup2(fds[1], STDOUT_FILENO);
         close(fds[1]);
 
-        std::string fullPath =
-            getFullPath(header[HOST_HEADER], request.getPath());
+        std::string fullPath = getFullPath(scriptName);
 
         CgiEnvMap envMap = createCgiEnvMap();
         char** envp = makeEnvp(envMap);
@@ -375,24 +375,24 @@ CgiEnvMap Worker::createCgiEnvMap() {
     envMap["CONTENT_LENGTH"] = header[CONTENT_LENGTH_HEADER];
     envMap["CONTENT_TYPE"] = header[CONTENT_TYPE_HEADER];
     envMap["GATEWAY_INTERFACE"] = GATEWAY_INTERFACE;
-    envMap["PATH_INFO"] = "";
-    envMap["PATH_TRANSLATED"] = "";
-    envMap["QUERY_STRING"] = "";
-    envMap["REMOTE_ADDR"] = "";
+    envMap["PATH_INFO"] = pathInfo;
+    envMap["PATH_TRANSLATED"] = "";  // TODO: rootDir + pathInfo
+    envMap["QUERY_STRING"] = request.getQuery();
+    envMap["REMOTE_ADDR"] = "";  // TODO: client address
     envMap["REMOTE_HOST"] = "";
     envMap["REMOTE_IDENT"] = "";
     envMap["REMOTE_USER"] = "";
-    envMap["REQUEST_METHOD"] = "";
-    envMap["SCRIPT_NAME"] = "";
-    envMap["SERVER_NAME"] = "";
-    envMap["SERVER_PORT"] = "";
+    envMap["REQUEST_METHOD"] = request.getMethod();
+    envMap["SCRIPT_NAME"] = scriptName;
+    envMap["SERVER_NAME"] = "";  // TODO: Configuration::Block::name
+    envMap["SERVER_PORT"] = port;
     envMap["SERVER_PROTOCOL"] = VERSION;
     envMap["SERVER_SOFTWARE"] = SERVER_SOFTWARE;
     return envMap;
 }
 
 ResponseData Worker::handleRequest() {
-    if (isStaticRequest(request)) {
+    if (isStatic) {
         return handleStaticRequest(request);
     }
     return handleDynamicRequest();
