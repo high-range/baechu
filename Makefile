@@ -13,6 +13,7 @@ SRCS		= src/server/Connector.cpp \
 					src/Manager.cpp \
 					src/Request.cpp \
 					src/RequestData.cpp \
+					src/RequestUtility.cpp \
 					src/Response.cpp \
 					src/ResponseData.cpp \
 					src/Worker.cpp \

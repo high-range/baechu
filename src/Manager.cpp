@@ -6,12 +6,17 @@
 #include "Response.hpp"
 #include "Worker.hpp"
 
-std::string Manager::run(std::string requestMessage, int port, std::string ip) {
+std::string Manager::run(std::string requestMessage, sockaddr_in serverAddr,
+                         sockaddr_in clientAddr) {
     try {
         if (requestMessage.empty()) {
             throw ResponseData(400);
         }
         RequestData requestData;
+
+        // TODO: have to add serverAddr and clientAddr to requestData
+        (void)serverAddr;
+        (void)clientAddr;
 
         Request::parseMessage(requestMessage, requestData);
         ResponseData responseData = Worker(requestData).handleRequest();

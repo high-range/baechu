@@ -21,8 +21,14 @@ class Webserv : public Connector {
             return;
         }
 
+        // prepare request, serverAddr, and clientAddr
         std::string request(buffer, bytes_read);
-        std::string response = Manager::run(request, 8080, "");
+        sockaddr_in serverAddr;
+        socklen_t serverAddrLen = sizeof(serverAddr);
+        getsockname(client_fd, (struct sockaddr*)&serverAddr, &serverAddrLen);
+        sockaddr_in clientAddr = clientAddresses[client_fd];
+
+        std::string response = Manager::run(request, serverAddr, clientAddr);
         send(client_fd, response.c_str(), response.size(), 0);
         std::cout << "Response sent" << std::endl;
     }
