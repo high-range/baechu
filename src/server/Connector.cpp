@@ -2,8 +2,8 @@
 
 #include <arpa/inet.h>
 #include <fcntl.h>
-#include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include <cstring>
@@ -13,18 +13,10 @@
 Connector::Connector(int port) : port(port), serverFd(-1), kq(-1) {}
 
 void Connector::start() {
-    try {
-        setupServer();
-        std::cout << "Server started on port " << port << std::endl;
-        handleConnections();
-        std::cout << "Server stopped" << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
-        stop();
-    } catch (const char* msg) {
-        std::cerr << "Exception: " << msg << std::endl;
-        stop();
-    }
+    setupServer();
+    std::cout << "Server started on port " << port << std::endl;
+    handleConnections();
+    std::cout << "Server stopped" << std::endl;
 }
 
 void Connector::stop() {
@@ -117,6 +109,34 @@ void Connector::handleConnections() {
                 std::cout << "\nClient IP Address: " << ip_address << std::endl;
                 std::cout << "Client Port: " << port << std::endl;
             } else {
+                // [클라이언트 주소 정보를 출력 (getpeername 사용 불가)]
+                // sockaddr_in AddrForTest;
+                // socklen_t AddrLenForTest = sizeof(AddrForTest);
+                // getpeername(fd, (struct sockaddr*)&AddrForTest,
+                //             &AddrLenForTest);
+                // std::cout << "\nClient IP Address: "
+                //           << inet_ntoa(AddrForTest.sin_addr) <<
+                //           std::endl;
+                // std::cout << "Client Port: "
+                //           << ntohs(AddrForTest.sin_port) << std::endl;
+
+                // [서버 주소 정보를 출력 (getsockname 사용 가능)]
+                // sockaddr_in AddrForTest;
+                // socklen_t AddrLenForTest = sizeof(AddrForTest);
+                // getsockname(fd, (struct sockaddr*)&AddrForTest,
+                //             &AddrLenForTest);
+                // std::cout << "Local Port  : " << AddrForTest.sin_port
+                //           << std::endl;
+                // std::cout << "Local IP address: "
+                //           << inet_ntoa(AddrForTest.sin_addr) <<
+                //           std::endl;
+
+                // [클라이언트 주소 정보를 출력 (clientAddresses 사용)]
+                // sockaddr_in clientAddr = clientAddresses[fd];
+                // std::string ip_address = inet_ntoa(clientAddr.sin_addr);
+                // int port = ntohs(clientAddr.sin_port);
+                // std::cout << "\nClient IP Address: " << ip_address <<
+                // std::endl; std::cout << "Client Port: " << port << std::endl;
                 handleRequest(fd);
                 close(fd);
             }
