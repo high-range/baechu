@@ -20,7 +20,8 @@ class RequestUtility {
     static std::string th_substr(c_uchar* src, const size_t start,
                                  const size_t end);
     static std::string th_strtrim(const std::string& src, c_uchar target);
-    static bool doesValidContentLength(const std::string& str);
+    static bool isNum(const std::string& str);
+    static long long strtonum(const std::string& str);
 
     friend class Request;
 };

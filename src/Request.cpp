@@ -178,7 +178,7 @@ void Request::parseMessage(std::string& requestMessage,
                 break;
             case ContentLength:
                 bodyHeaderValue = requestData.header[bodyHeaderName];
-                if (RequestUtility::doesValidContentLength(bodyHeaderValue)) {
+                if (RequestUtility::isNum(bodyHeaderValue)) {
                     token = parseBodyByContentLength(begin, bodyHeaderValue);
                     requestData.setBody(token);
                     token = "";
@@ -207,7 +207,7 @@ std::string Request::parseBodyByContentLength(uchar* begin,
     std::istringstream bodyStream(std::string(reinterpret_cast<char*>(begin)));
     Configuration config = Configuration::getInstance();
     std::string buffer;
-    long long bodyLength = strtoll(length.c_str(), NULL, 10);
+    long long bodyLength = RequestUtility::strtonum(length);
 
     if (bodyStream.fail()) {
         throw ResponseData(400);  // stream 생성 실패에 대한 throw

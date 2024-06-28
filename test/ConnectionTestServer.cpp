@@ -1,7 +1,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include <cstring>
 #include <iostream>
 #include <sstream>
 
@@ -10,41 +9,17 @@
 #include "RequestData.hpp"
 #include "server/Connector.hpp"
 
-const int BUFFER_SIZE = 1024;
-
 class Webserv : public Connector {
   public:
     Webserv(int port) : Connector(port) {}
 
   protected:
     void handleRequest(int client_fd) {
-        std::string request;
-        char buffer[BUFFER_SIZE];
-
-        while (true) {
-            int bytes_read = recv(client_fd, buffer, sizeof(buffer), 0);
-
-            if (bytes_read < 0) {
-                // Check if it's a non-blocking mode error (temporary condition)
-                // or a genuine failure (permanent error)
-                if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    // std::cerr << "Data is not ready yet." << std::endl;
-                    break;
-                } else {
-                    std::cerr
-                        << "Failed to read from socket: " << strerror(errno)
-                        << std::endl;
-                    close(client_fd);
-                    return;
-                }
-            } else if (bytes_read == 0) {
-                std::cerr << "Connection closed by client." << std::endl;
-                break;
-            }
-
-            request.append(buffer, bytes_read);
-            std::cout << bytes_read << " bytes read. Request message appended"
-                      << std::endl;
+        char buffer[1024];
+        int bytes_read = read(client_fd, buffer, sizeof(buffer));
+        if (bytes_read < 0) {
+            std::cerr << "Failed to read from socket." << std::endl;
+            return;
         }
 
         // prepare request, serverAddr, and clientAddr
@@ -63,15 +38,13 @@ class Webserv : public Connector {
 
 int main(int argc, char* argv[]) {
     std::string filename = "./conf/default.conf";
-    if (argc > 1) {
-        filename = argv[1];
-    }
+    if (argc > 1) filename = argv[1];
 
+    // Get the single instance of Configuration and initialize it
     Configuration& config = Configuration::getInstance();
     config.initialize(filename);
 
     Webserv server(8080);
     server.start();
-
     return 0;
 }

@@ -1,5 +1,7 @@
 #include "RequestUtility.hpp"
 
+#include <sstream>
+
 bool RequestUtility::isObsFold(c_uchar* str) {
     return isCRLF(str) && isWS(str[2]);
 }
@@ -100,8 +102,8 @@ std::string RequestUtility::th_strtrim(const std::string& src, c_uchar target) {
     return src.substr(start, end - start);
 }
 
-bool RequestUtility::doesValidContentLength(const std::string& str) {
-    if (str.empty()) {
+bool RequestUtility::isNum(const std::string& str) {
+    if (str.empty() || (str.size() > 1 && str[0] == '0')) {
         return false;
     }
     for (size_t i = 0; i < str.size(); i++) {
@@ -110,4 +112,15 @@ bool RequestUtility::doesValidContentLength(const std::string& str) {
         }
     }
     return true;
+}
+
+long long RequestUtility::strtonum(const std::string& str) {
+    std::istringstream iss(str);
+    long long num;
+
+    iss >> num;
+    if (*str.end() == 'M') {
+        num *= 1024 * 1024;
+    }
+    return num;
 }
