@@ -177,6 +177,7 @@ void Request::parseMessage(std::string& requestMessage,
                     throw ResponseData(400);
                 break;
             case ContentLength:
+
                 bodyHeaderValue = requestData.header[bodyHeaderName];
                 if (RequestUtility::isNum(bodyHeaderValue)) {
                     token = parseBodyByContentLength(begin, bodyHeaderValue);
@@ -187,6 +188,7 @@ void Request::parseMessage(std::string& requestMessage,
                     throw ResponseData(400);
                 break;
             case TransferEncoding:
+
                 bodyHeaderValue = requestData.header[bodyHeaderName];
                 if (bodyHeaderValue == "chunked") {
                     token = parseBodyByTransferEncoding(begin, end);
