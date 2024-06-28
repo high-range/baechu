@@ -7,6 +7,7 @@
 
 #include "Configuration.hpp"
 #include "Manager.hpp"
+#include "RequestData.hpp"
 #include "server/Connector.hpp"
 
 const int BUFFER_SIZE = 1024;
@@ -45,27 +46,17 @@ class Webserv : public Connector {
             std::cout << bytes_read << " bytes read. Request message appended"
                       << std::endl;
         }
+        // prepare request, serverAddr, and clientAddr
+        std::string request(buffer, bytes_read);
+        sockaddr_in serverAddr;
+        socklen_t serverAddrLen = sizeof(serverAddr);
+        getsockname(client_fd, (struct sockaddr*)&serverAddr, &serverAddrLen);
+        sockaddr_in clientAddr = clientAddresses[client_fd];
 
-        // Process the request if it's non-empty
-        if (!request.empty()) {
-            // TODO: Send "ip, port number" to Manager.
-            // (Need to implement after Refactoring)
-            // sockaddr_in clientAddr = clientAddresses[client_fd];
-            // std::string ip_address = inet_ntoa(clientAddr.sin_addr);
-            // int port = ntohs(clientAddr.sin_port);
-            std::string response =
-                Manager::run(request, Configuration::getInstance());
-            if (send(client_fd, response.c_str(), response.size(), 0) < 0) {
-                std::cerr << "Failed to send response: " << strerror(errno)
-                          << std::endl;
-            } else {
-                std::cout << "Response sent" << std::endl;
-            }
-        } else {
-            std::cerr << "Received empty request." << std::endl;
-        }
-
-        close(client_fd);
+        std::string response =
+            Manager::run(request, RequestData(serverAddr, clientAddr));
+        send(client_fd, response.c_str(), response.size(), 0);
+        std::cout << "Response sent" << std::endl;
     }
 };
 
