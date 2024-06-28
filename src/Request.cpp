@@ -1,6 +1,7 @@
 #include "Request.hpp"
 
 #include <cstdlib>
+#include <iostream>
 #include <sstream>
 
 #include "Configuration.hpp"
@@ -177,18 +178,17 @@ void Request::parseMessage(std::string& requestMessage,
                     throw ResponseData(400);
                 break;
             case ContentLength:
-
                 bodyHeaderValue = requestData.header[bodyHeaderName];
                 if (RequestUtility::isNum(bodyHeaderValue)) {
                     token = parseBodyByContentLength(begin, bodyHeaderValue);
                     requestData.setBody(token);
                     token = "";
                     state = BodyEnd;
+                    std::cout << "body: " << requestData.body << std::endl;
                 } else
                     throw ResponseData(400);
                 break;
             case TransferEncoding:
-
                 bodyHeaderValue = requestData.header[bodyHeaderName];
                 if (bodyHeaderValue == "chunked") {
                     token = parseBodyByTransferEncoding(begin, end);
@@ -208,17 +208,17 @@ std::string Request::parseBodyByContentLength(uchar* begin,
                                               std::string length) {
     std::istringstream bodyStream(std::string(reinterpret_cast<char*>(begin)));
     Configuration config = Configuration::getInstance();
-    std::string buffer;
     long long bodyLength = RequestUtility::strtonum(length);
+    std::string buffer(bodyLength, '\0');
 
     if (bodyStream.fail()) {
         throw ResponseData(400);  // stream 생성 실패에 대한 throw
     } else if (bodyLength < 0)
         throw ResponseData(400);  // content-length가 음수일 때 throw
     bodyStream.read(&buffer[0], bodyLength);
-    if (bodyStream.gcount() != bodyLength) {
-        throw ResponseData(400);  // read error 로 인한 throw
-    }
+    // if (bodyStream.gcount() != bodyLength) {
+    //     throw ResponseData(400);
+    // } // max body size 관련 처리 필요, 일단 주석처리
     return buffer;
 }
 

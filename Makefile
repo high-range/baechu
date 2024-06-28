@@ -1,6 +1,6 @@
 NAME		= webserv
 CC			= c++
-CXXFLAGS	= -Wall -Wextra -Werror -std=c++98
+CXXFLAGS	= -Wall -Wextra -Werror -std=c++98 -g
 AR			= ar
 ARFLAGS		= rs
 ARFILE		= webserv.a
