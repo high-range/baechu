@@ -77,7 +77,7 @@ void Request::parseMessage(std::string& requestMessage,
                         token += *(++begin);
                     }
                 } else if (input == ' ') {
-                    requestData.setPath(token.substr(queryStart));
+                    requestData.setQuery(token.substr(queryStart));
                     state = RequestTargetEnd;
                 } else
                     throw ResponseData(400);

@@ -21,13 +21,12 @@ class RequestData {
     } startLine;
     Header header;
     std::string body;
-    // request message parsing data
+    // request message info
 
     struct ClientData {
         std::string port;
         std::string ip;
     } clientData;
-    // client information
 
     struct ServerData {
         std::string port;
@@ -42,11 +41,9 @@ class RequestData {
     void setHeader(const std::string& key, const std::string& value);
     void setBody(const std::string& body);
     const std::string getBodyHeaderName();
-    // RequestData에 대한 setter 함수 정의
 
   public:
     RequestData(sockaddr_in client, sockaddr_in host);
-    RequestData(){};  // for test (need to remove)
     std::string getMethod() const;
     std::string getRequestTarget() const;
     std::string getPath() const;
@@ -58,7 +55,6 @@ class RequestData {
     std::string getServerIP() const;
     std::string getClientPort() const;
     std::string getClientIP() const;
-    // RequestData에 대한 getter 함수 정의
 
     friend class Request;
 };
