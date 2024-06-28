@@ -51,9 +51,11 @@ Worker::Worker(const RequestData& request) : request(request) {
         port = "80";
     }
 
+    path = request.getPath();
+    fullPath = getFullPath(path);
+
     isStatic = true;
 
-    std::string path = request.getPath();
     size_t dotPos = path.rfind('.');
     if (dotPos != std::string::npos) {
         size_t dirPos = path.find('/', dotPos);
@@ -70,6 +72,7 @@ Worker::Worker(const RequestData& request) : request(request) {
                 isStatic = false;
                 pathInfo = path.substr(dirPos);
                 scriptName = path.substr(0, dirPos);
+                fullPath = getFullPath(scriptName);
                 break;
             }
         }
@@ -103,40 +106,22 @@ std::string Worker::getFullPath(const std::string& path) {
     return fullPath;
 }
 
-ResponseData Worker::handleStaticRequest(const RequestData& request) {
+ResponseData Worker::handleStaticRequest() {
     const std::string& method = request.getMethod();
 
     if (host.empty()) {
         return ResponseData(400);
-    } else if (method == "GET") {
-        return doGet(request);
-    } else if (method == "POST") {
-        return doPost(request);
-    } else if (method == "DELETE") {
-        return doDelete(request);
+    } else if (method == GET) {
+        return doGet();
+    } else if (method == POST) {
+        return doPost();
+    } else if (method == DELETE) {
+        return doDelete();
     }
     return ResponseData(405);
 }
 
-bool isFile(const std::string& fullPath) {
-    struct stat statBuffer;
-    if (stat(fullPath.c_str(), &statBuffer) != 0) {
-        throw std::runtime_error(
-            "stat failed for path: " + fullPath +
-            " with error: " + std::string(strerror(errno)));
-    }
-
-    if (S_ISREG(statBuffer.st_mode)) {
-        return true;  // 일반 파일인 경우 true 반환
-    } else if (S_ISDIR(statBuffer.st_mode)) {
-        return false;  // 디렉토리인 경우 false 반환
-    }
-    throw std::runtime_error(
-        "unknown file type: " +
-        fullPath);  // 알 수 없는 파일 유형인 경우 예외 발생
-}
-
-ResponseData doGetFile(const std::string& fullPath) {
+ResponseData Worker::doGetFile() {
     std::ifstream file(fullPath);
     if (!file.is_open()) {
         throw "file not found";
@@ -182,8 +167,7 @@ ResponseData doGetFile(const std::string& fullPath) {
     return ResponseData(200, headers, ss.str());
 }
 
-ResponseData doGetDirectory(const std::string& fullPath,
-                            const std::string& path) {
+ResponseData Worker::doGetDirectory() {
     DIR* dir = opendir(fullPath.c_str());
     if (dir == nullptr) {
         throw "could not open directory";
@@ -221,20 +205,17 @@ ResponseData doGetDirectory(const std::string& fullPath,
     return ResponseData(200, headers, ss.str());
 }
 
-ResponseData Worker::doGet(const RequestData& request) {
-    std::string fullPath = getFullPath(request.getPath());
-
-    try {
-        if (isFile(fullPath)) {
-            return doGetFile(fullPath);
+ResponseData Worker::doGet() {
+    struct stat buf;
+    if (stat(fullPath.c_str(), &buf) == 0) {
+        if (S_ISREG(buf.st_mode) || S_ISLNK(buf.st_mode)) {
+            return doGetFile();
+        } else if (S_ISDIR(buf.st_mode)) {
+            return doGetDirectory();
         }
-    } catch (const std::runtime_error& e) {
-        std::cerr << e.what() << std::endl;
-        // 예외가 발생하면 404 Not Found 응답을 반환
-        return ResponseData(404, "Not Found: " + std::string(e.what()));
     }
 
-    return doGetDirectory(fullPath, request.getPath());
+    throw ResponseData(404);
 }
 
 std::string generateFilename() {
@@ -260,8 +241,7 @@ bool saveFile(const std::string& dir, const std::string& content) {
     }
 }
 
-ResponseData Worker::doPost(const RequestData& request) {
-    std::string fullPath = getFullPath(request.getPath());
+ResponseData Worker::doPost() {
     std::string content = request.getBody();
 
     if (saveFile(fullPath, content)) {
@@ -270,9 +250,7 @@ ResponseData Worker::doPost(const RequestData& request) {
     return ResponseData(500);
 }
 
-ResponseData Worker::doDelete(const RequestData& request) {
-    std::string fullPath = getFullPath(request.getPath());
-
+ResponseData Worker::doDelete() {
     struct stat buffer;
     if (stat(fullPath.c_str(), &buffer) == 0) {
         if (std::remove(fullPath.c_str()) == 0) {
@@ -345,8 +323,6 @@ std::string Worker::runCgi() {
         dup2(fds[1], STDOUT_FILENO);
         close(fds[1]);
 
-        std::string fullPath = getFullPath(scriptName);
-
         CgiEnvMap envMap = createCgiEnvMap();
         char** envp = makeEnvp(envMap);
 
@@ -378,14 +354,14 @@ CgiEnvMap Worker::createCgiEnvMap() {
     envMap["PATH_INFO"] = pathInfo;
     envMap["PATH_TRANSLATED"] = "";  // TODO: rootDir + pathInfo
     envMap["QUERY_STRING"] = request.getQuery();
-    envMap["REMOTE_ADDR"] = "";  // TODO: client address
+    envMap["REMOTE_ADDR"] = request.getClientIP();
     envMap["REMOTE_HOST"] = "";
     envMap["REMOTE_IDENT"] = "";
     envMap["REMOTE_USER"] = "";
     envMap["REQUEST_METHOD"] = request.getMethod();
     envMap["SCRIPT_NAME"] = scriptName;
     envMap["SERVER_NAME"] = "";  // TODO: Configuration::Block::name
-    envMap["SERVER_PORT"] = port;
+    envMap["SERVER_PORT"] = request.getServerPort();
     envMap["SERVER_PROTOCOL"] = VERSION;
     envMap["SERVER_SOFTWARE"] = SERVER_SOFTWARE;
     return envMap;
@@ -393,7 +369,7 @@ CgiEnvMap Worker::createCgiEnvMap() {
 
 ResponseData Worker::handleRequest() {
     if (isStatic) {
-        return handleStaticRequest(request);
+        return handleStaticRequest();
     }
     return handleDynamicRequest();
 }
