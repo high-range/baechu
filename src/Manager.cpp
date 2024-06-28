@@ -1,5 +1,7 @@
 #include "Manager.hpp"
 
+#include <iostream>
+
 #include "Configuration.hpp"
 #include "Request.hpp"
 #include "RequestData.hpp"
@@ -11,7 +13,9 @@ std::string Manager::run(std::string requestMessage, RequestData requestData) {
         if (requestMessage.empty()) {
             throw ResponseData(400);
         }
-        Request::messageParse(requestMessage, requestData, configuration);
+        std::cout << requestMessage << std::endl;
+
+        Request::parseMessage(requestMessage, requestData);
         ResponseData responseData = Worker(requestData).handleRequest();
         return (Response::messageGenerate(responseData));
     } catch (ResponseData& responseData) {

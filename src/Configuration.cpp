@@ -3,10 +3,15 @@
 #include <iostream>
 
 // -------------------------- Constructor -------------------------------
+
+Configuration* Configuration::configuration_ = NULL;
 Configuration::Configuration() {}
 
 // Static method to get the single instance of Configuration
-Configuration& Configuration::getInstance() { return configuration_; }
+Configuration& Configuration::getInstance() {
+    if (configuration_ == NULL) configuration_ = new Configuration();
+    return *configuration_;
+}
 
 // Method to initialize the Configuration with a filename
 void Configuration::initialize(const std::string& filename) {

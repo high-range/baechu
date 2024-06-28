@@ -46,8 +46,8 @@ class Webserv : public Connector {
             std::cout << bytes_read << " bytes read. Request message appended"
                       << std::endl;
         }
+
         // prepare request, serverAddr, and clientAddr
-        std::string request(buffer, bytes_read);
         sockaddr_in serverAddr;
         socklen_t serverAddrLen = sizeof(serverAddr);
         getsockname(client_fd, (struct sockaddr*)&serverAddr, &serverAddrLen);
