@@ -108,11 +108,11 @@ ResponseData Worker::handleStaticRequest(const RequestData& request) {
 
     if (host.empty()) {
         return ResponseData(400);
-    } else if (method == "GET") {
+    } else if (method == GET) {
         return doGet(request);
-    } else if (method == "POST") {
+    } else if (method == POST) {
         return doPost(request);
-    } else if (method == "DELETE") {
+    } else if (method == DELETE) {
         return doDelete(request);
     }
     return ResponseData(405);
