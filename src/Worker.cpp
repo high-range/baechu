@@ -106,17 +106,17 @@ std::string Worker::getFullPath(const std::string& path) {
     return fullPath;
 }
 
-ResponseData Worker::handleStaticRequest(const RequestData& request) {
+ResponseData Worker::handleStaticRequest() {
     const std::string& method = request.getMethod();
 
     if (host.empty()) {
         return ResponseData(400);
     } else if (method == GET) {
-        return doGet(request);
+        return doGet();
     } else if (method == POST) {
-        return doPost(request);
+        return doPost();
     } else if (method == DELETE) {
-        return doDelete(request);
+        return doDelete();
     }
     return ResponseData(405);
 }
@@ -223,7 +223,7 @@ ResponseData Worker::doGetDirectory() {
     return ResponseData(200, headers, ss.str());
 }
 
-ResponseData Worker::doGet(const RequestData& request) {
+ResponseData Worker::doGet() {
     try {
         if (isFile(fullPath)) {
             return doGetFile();
@@ -260,7 +260,7 @@ bool saveFile(const std::string& dir, const std::string& content) {
     }
 }
 
-ResponseData Worker::doPost(const RequestData& request) {
+ResponseData Worker::doPost() {
     std::string content = request.getBody();
 
     if (saveFile(fullPath, content)) {
@@ -269,7 +269,7 @@ ResponseData Worker::doPost(const RequestData& request) {
     return ResponseData(500);
 }
 
-ResponseData Worker::doDelete(const RequestData& request) {
+ResponseData Worker::doDelete() {
     struct stat buffer;
     if (stat(fullPath.c_str(), &buffer) == 0) {
         if (std::remove(fullPath.c_str()) == 0) {
@@ -388,7 +388,7 @@ CgiEnvMap Worker::createCgiEnvMap() {
 
 ResponseData Worker::handleRequest() {
     if (isStatic) {
-        return handleStaticRequest(request);
+        return handleStaticRequest();
     }
     return handleDynamicRequest();
 }

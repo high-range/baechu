@@ -39,15 +39,15 @@ class Worker {
     std::string pathInfo;
     std::string scriptName;
 
-    ResponseData handleStaticRequest(const RequestData& request);
+    ResponseData handleStaticRequest();
 
     ResponseData doGetFile();
     ResponseData doGetDirectory();
-    ResponseData doGet(const RequestData& request);
+    ResponseData doGet();
 
-    ResponseData doPost(const RequestData& request);
+    ResponseData doPost();
 
-    ResponseData doDelete(const RequestData& request);
+    ResponseData doDelete();
 
     std::string getFullPath(const std::string& path);
 
