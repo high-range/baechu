@@ -354,14 +354,14 @@ CgiEnvMap Worker::createCgiEnvMap() {
     envMap["PATH_INFO"] = pathInfo;
     envMap["PATH_TRANSLATED"] = "";  // TODO: rootDir + pathInfo
     envMap["QUERY_STRING"] = request.getQuery();
-    envMap["REMOTE_ADDR"] = "";  // TODO: client address
+    envMap["REMOTE_ADDR"] = request.getClientIP();
     envMap["REMOTE_HOST"] = "";
     envMap["REMOTE_IDENT"] = "";
     envMap["REMOTE_USER"] = "";
     envMap["REQUEST_METHOD"] = request.getMethod();
     envMap["SCRIPT_NAME"] = scriptName;
     envMap["SERVER_NAME"] = "";  // TODO: Configuration::Block::name
-    envMap["SERVER_PORT"] = port;
+    envMap["SERVER_PORT"] = request.getServerPort();
     envMap["SERVER_PROTOCOL"] = VERSION;
     envMap["SERVER_SOFTWARE"] = SERVER_SOFTWARE;
     return envMap;
