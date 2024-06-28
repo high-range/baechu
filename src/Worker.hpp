@@ -57,6 +57,5 @@ class Worker {
 };
 
 // Utility functions used in Worker.cpp
-bool isFile(const std::string& fullPath);
 std::string generateFilename();
 bool saveFile(const std::string& dir, const std::string& content);

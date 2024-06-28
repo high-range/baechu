@@ -121,24 +121,6 @@ ResponseData Worker::handleStaticRequest() {
     return ResponseData(405);
 }
 
-bool isFile(const std::string& fullPath) {
-    struct stat statBuffer;
-    if (stat(fullPath.c_str(), &statBuffer) != 0) {
-        throw std::runtime_error(
-            "stat failed for path: " + fullPath +
-            " with error: " + std::string(strerror(errno)));
-    }
-
-    if (S_ISREG(statBuffer.st_mode)) {
-        return true;  // 일반 파일인 경우 true 반환
-    } else if (S_ISDIR(statBuffer.st_mode)) {
-        return false;  // 디렉토리인 경우 false 반환
-    }
-    throw std::runtime_error(
-        "unknown file type: " +
-        fullPath);  // 알 수 없는 파일 유형인 경우 예외 발생
-}
-
 ResponseData Worker::doGetFile() {
     std::ifstream file(fullPath);
     if (!file.is_open()) {
@@ -224,17 +206,16 @@ ResponseData Worker::doGetDirectory() {
 }
 
 ResponseData Worker::doGet() {
-    try {
-        if (isFile(fullPath)) {
+    struct stat buf;
+    if (stat(fullPath.c_str(), &buf) == 0) {
+        if (S_ISREG(buf.st_mode) || S_ISLNK(buf.st_mode)) {
             return doGetFile();
+        } else if (S_ISDIR(buf.st_mode)) {
+            return doGetDirectory();
         }
-    } catch (const std::runtime_error& e) {
-        std::cerr << e.what() << std::endl;
-        // 예외가 발생하면 404 Not Found 응답을 반환
-        return ResponseData(404, "Not Found: " + std::string(e.what()));
     }
 
-    return doGetDirectory();
+    throw ResponseData(404);
 }
 
 std::string generateFilename() {
