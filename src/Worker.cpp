@@ -51,9 +51,11 @@ Worker::Worker(const RequestData& request) : request(request) {
         port = "80";
     }
 
+    path = request.getPath();
+    fullPath = getFullPath(path);
+
     isStatic = true;
 
-    std::string path = request.getPath();
     size_t dotPos = path.rfind('.');
     if (dotPos != std::string::npos) {
         size_t dirPos = path.find('/', dotPos);
@@ -70,6 +72,7 @@ Worker::Worker(const RequestData& request) : request(request) {
                 isStatic = false;
                 pathInfo = path.substr(dirPos);
                 scriptName = path.substr(0, dirPos);
+                fullPath = getFullPath(scriptName);
                 break;
             }
         }
@@ -136,7 +139,7 @@ bool isFile(const std::string& fullPath) {
         fullPath);  // 알 수 없는 파일 유형인 경우 예외 발생
 }
 
-ResponseData doGetFile(const std::string& fullPath) {
+ResponseData Worker::doGetFile() {
     std::ifstream file(fullPath);
     if (!file.is_open()) {
         throw "file not found";
@@ -182,8 +185,7 @@ ResponseData doGetFile(const std::string& fullPath) {
     return ResponseData(200, headers, ss.str());
 }
 
-ResponseData doGetDirectory(const std::string& fullPath,
-                            const std::string& path) {
+ResponseData Worker::doGetDirectory() {
     DIR* dir = opendir(fullPath.c_str());
     if (dir == nullptr) {
         throw "could not open directory";
@@ -222,11 +224,9 @@ ResponseData doGetDirectory(const std::string& fullPath,
 }
 
 ResponseData Worker::doGet(const RequestData& request) {
-    std::string fullPath = getFullPath(request.getPath());
-
     try {
         if (isFile(fullPath)) {
-            return doGetFile(fullPath);
+            return doGetFile();
         }
     } catch (const std::runtime_error& e) {
         std::cerr << e.what() << std::endl;
@@ -234,7 +234,7 @@ ResponseData Worker::doGet(const RequestData& request) {
         return ResponseData(404, "Not Found: " + std::string(e.what()));
     }
 
-    return doGetDirectory(fullPath, request.getPath());
+    return doGetDirectory();
 }
 
 std::string generateFilename() {
@@ -261,7 +261,6 @@ bool saveFile(const std::string& dir, const std::string& content) {
 }
 
 ResponseData Worker::doPost(const RequestData& request) {
-    std::string fullPath = getFullPath(request.getPath());
     std::string content = request.getBody();
 
     if (saveFile(fullPath, content)) {
@@ -271,8 +270,6 @@ ResponseData Worker::doPost(const RequestData& request) {
 }
 
 ResponseData Worker::doDelete(const RequestData& request) {
-    std::string fullPath = getFullPath(request.getPath());
-
     struct stat buffer;
     if (stat(fullPath.c_str(), &buffer) == 0) {
         if (std::remove(fullPath.c_str()) == 0) {
@@ -344,8 +341,6 @@ std::string Worker::runCgi() {
 
         dup2(fds[1], STDOUT_FILENO);
         close(fds[1]);
-
-        std::string fullPath = getFullPath(scriptName);
 
         CgiEnvMap envMap = createCgiEnvMap();
         char** envp = makeEnvp(envMap);

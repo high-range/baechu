@@ -32,15 +32,25 @@ class Worker {
     std::string domain;
     std::string port;
 
+    std::string path;
+    std::string fullPath;
+
     bool isStatic;
     std::string pathInfo;
     std::string scriptName;
 
     ResponseData handleStaticRequest(const RequestData& request);
+
+    ResponseData doGetFile();
+    ResponseData doGetDirectory();
     ResponseData doGet(const RequestData& request);
+
     ResponseData doPost(const RequestData& request);
+
     ResponseData doDelete(const RequestData& request);
+
     std::string getFullPath(const std::string& path);
+
     ResponseData handleDynamicRequest();
     CgiEnvMap createCgiEnvMap();
     std::string runCgi();
@@ -48,8 +58,5 @@ class Worker {
 
 // Utility functions used in Worker.cpp
 bool isFile(const std::string& fullPath);
-ResponseData doGetFile(const std::string& fullPath);
-ResponseData doGetDirectory(const std::string& fullPath,
-                            const std::string& path);
 std::string generateFilename();
 bool saveFile(const std::string& dir, const std::string& content);
