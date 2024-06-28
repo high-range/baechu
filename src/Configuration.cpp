@@ -6,10 +6,7 @@
 Configuration::Configuration() {}
 
 // Static method to get the single instance of Configuration
-Configuration& Configuration::getInstance() {
-    static Configuration instance;
-    return instance;
-}
+Configuration& Configuration::getInstance() { return configuration_; }
 
 // Method to initialize the Configuration with a filename
 void Configuration::initialize(const std::string& filename) {

@@ -30,7 +30,7 @@ class Configuration {
   private:
     // Private constructor to prevent instantiation
     Configuration();
-
+    static Configuration configuration_;
     // parsing
     void parseConfigFile(const std::string& filename);
     bool parseBlock(std::ifstream& file, Block& current_block);
