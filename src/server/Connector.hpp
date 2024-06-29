@@ -9,7 +9,8 @@
 #include "Manager.hpp"
 #include "RequestData.hpp"
 
-const int BUFFER_SIZE = 1024;
+#define BUFFER_SIZE 1024
+#define MAX_EVENTS 10
 
 class Connector {
   public:
@@ -28,5 +29,6 @@ class Connector {
     void handleEvent(struct kevent& event);
     bool acceptConnection(int serverFd);
     void setNonBlocking(int fd);
+    void closeConnection(int client_fd);
     void handleRequest(int client_fd);
 };
