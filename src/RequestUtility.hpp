@@ -22,7 +22,7 @@ class RequestUtility {
     static std::string th_strtrim(const std::string& src, c_uchar target);
     static bool isNum(const std::string& str);
     static long long strtonum(const std::string& str);
-
+    static long long hexTonum(const std::string& str);
     friend class Request;
 };
 
