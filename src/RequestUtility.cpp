@@ -124,3 +124,13 @@ long long RequestUtility::strtonum(const std::string& str) {
     }
     return num;
 }
+
+long long RequestUtility::hexTonum(const std::string& str)
+{
+    std::stringstream ss;
+    long long num;
+
+    ss << std::hex << str;
+    ss >> num;
+    return num;
+}

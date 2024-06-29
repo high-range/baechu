@@ -224,7 +224,8 @@ std::string Request::parseBodyByContentLength(uchar* begin,
 
 std::string Request::parseBodyByTransferEncoding(uchar* begin, uchar* end) {
     ChunkState state;
-    std::string buffer;
+    std::string body, chunkData, chunkSizeStr, trailerField;
+    long long chunkSizeNum;
     uchar input;
 
     state = Chunk;
@@ -241,12 +242,13 @@ std::string Request::parseBodyByTransferEncoding(uchar* begin, uchar* end) {
                 break;
             case ChunkSize:
                 if (RequestUtility::isHexDigit(input)) {
-                    buffer += input;
+                    chunkSizeStr += input;
                 } else if (input == ';') {
+                    chunkSizeNum = RequestUtility::hexTonum(chunkSizeStr);
                     state = ChunkExt;
                 } else if (RequestUtility::isCRLF(begin)) {
-                    buffer += input;
-                    buffer += *(++begin);
+                    chunkSizeNum = RequestUtility::hexTonum(chunkSizeStr);
+                    begin++;
                     state = ChunkData;
                 } else
                     throw ResponseData(400);
@@ -254,37 +256,40 @@ std::string Request::parseBodyByTransferEncoding(uchar* begin, uchar* end) {
                 break;
             case ChunkExt:
                 if (RequestUtility::isCRLF(begin)) {
-                    buffer += input;
-                    buffer += *(++begin);
+                    begin++;
                     state = ChunkData;
                 }
                 begin++;
                 break;
             case ChunkData:
-                buffer += input;
                 if (RequestUtility::isCRLF(begin)) {
-                    buffer += *(++begin);
+                    if (static_cast<long long>(chunkData.size()) ==
+                        chunkSizeNum) {
+                        body += chunkData;
+                        chunkSizeStr = "";
+                        chunkData = "";
+                    } else
+                        throw ResponseData(400);
+                    begin++;
                     state = Chunk;
-                }
+                } else
+                    chunkData += input;
                 begin++;
                 break;
             case LastChunk:
-                if (input == '0') {
-                    buffer += input;
-                } else if (input == ';') {
+                if (input == '0')
+                    begin++;
+                else if (input == ';') {
                     state = LastChunkExt;
                 } else if (RequestUtility::isCRLF(begin)) {
-                    buffer += input;
-                    buffer += *(++begin);
+                    begin += 2;
                     state = TrailerStart;
                 } else
                     throw ResponseData(400);
-                begin++;
                 break;
             case LastChunkExt:
                 if (RequestUtility::isCRLF(begin)) {
-                    buffer += input;
-                    buffer += *(++begin);
+                    begin++;
                     state = TrailerStart;
                 }
                 begin++;
@@ -303,12 +308,12 @@ std::string Request::parseBodyByTransferEncoding(uchar* begin, uchar* end) {
                 } else if (!RequestUtility::isTchar(input)) {
                     throw ResponseData(400);
                 }
-                buffer += input;
+                trailerField += input;
                 begin++;
                 break;
             case TrailerWhiteSpace:
                 if (RequestUtility::isWS(input)) {
-                    buffer += input;
+                    trailerField += input;
                     begin++;
                 } else
                     state = TrailerFieldValue;
@@ -320,13 +325,13 @@ std::string Request::parseBodyByTransferEncoding(uchar* begin, uchar* end) {
                     state = TrailerObsFold;
                 } else if (RequestUtility::isCRLF(begin) &&
                            RequestUtility::isCRLF(begin + 2)) {
-                    buffer += input;
-                    buffer += *(++begin);
+                    trailerField += input;
+                    trailerField += *(++begin);
                     begin++;
                     state = TrailerEnd;
                 } else if (RequestUtility::isCRLF(begin)) {
-                    buffer += input;
-                    buffer += *(++begin);
+                    trailerField += input;
+                    trailerField += *(++begin);
                     begin++;
                     state = TrailerFieldName;
                 } else
@@ -334,7 +339,7 @@ std::string Request::parseBodyByTransferEncoding(uchar* begin, uchar* end) {
                 break;
             case TrailerFieldContent:
                 if (RequestUtility::isFieldVchar(input)) {
-                    buffer += input;
+                    trailerField += input;
                     begin++;
                 } else if (RequestUtility::isWS(input)) {
                     state = TrailerWhiteSpace;
@@ -342,17 +347,17 @@ std::string Request::parseBodyByTransferEncoding(uchar* begin, uchar* end) {
                     state = TrailerFieldValue;
                 break;
             case TrailerObsFold:
-                buffer += input;
-                buffer += *(++begin);
+                trailerField += input;
+                trailerField += *(++begin);
                 state = TrailerWhiteSpace;
                 begin++;
                 break;
             case TrailerEnd:
-                buffer += input;
-                buffer += *(++begin);
+                trailerField += input;
+                trailerField += *(++begin);
                 begin++;
                 break;
         }
     }
-    return buffer;
+    return body;
 }
