@@ -13,6 +13,7 @@
 #define CONTENT_LENGTH_HEADER "content-length"
 #define GET "GET"
 #define POST "POST"
+#define PUT "PUT"
 #define DELETE "DELETE"
 
 typedef std::map<std::string, std::string> CgiEnvMap;
@@ -47,6 +48,8 @@ class Worker {
 
     ResponseData doPost();
 
+    ResponseData doPut();
+
     ResponseData doDelete();
 
     std::string getFullPath(const std::string& path);
@@ -55,7 +58,3 @@ class Worker {
     CgiEnvMap createCgiEnvMap();
     std::string runCgi();
 };
-
-// Utility functions used in Worker.cpp
-std::string generateFilename();
-bool saveFile(const std::string& dir, const std::string& content);
