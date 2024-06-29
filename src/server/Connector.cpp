@@ -10,30 +10,36 @@
 #include <iostream>
 #include <sstream>
 
-Connector::Connector(int port) : port(port), serverFd(-1), kq(-1) {}
-
-void Connector::start() {
-    setupServer();
-    std::cout << "Server started on port " << port << std::endl;
-    handleConnections();
-    std::cout << "Server stopped" << std::endl;
-}
-
-void Connector::stop() {
-    if (serverFd != -1) {
-        close(serverFd);
-    }
-    if (kq != -1) {
-        close(kq);
-    }
-}
-
-void Connector::setupServer() {
-    serverFd = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverFd == -1) {
-        std::cerr << "Failed to create socket" << std::endl;
+Connector::Connector() {
+    kq = kqueue();
+    if (kq == -1) {
+        std::cerr << "Failed to create kqueue" << std::endl;
         exit(EXIT_FAILURE);
     }
+}
+
+Connector::~Connector() {
+    std::vector<int>::iterator it;
+    for (it = serverSokets.begin(); it != serverSokets.end(); it++) {
+        close(*it);
+    }
+    close(kq);
+}
+
+bool Connector::addServer(int port) {
+    int serverFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverFd == -1) {
+        std::cerr << "Failed to create socket" << std::endl;
+        return false;
+    }
+
+    setNonBlocking(serverFd);
+
+    sockaddr_in serverAddr;
+    std::memset(&serverAddr, 0, sizeof(serverAddr));
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    serverAddr.sin_port = htons(port);
 
     // Set SO_REUSEADDR option
     int opt = 1;
@@ -41,107 +47,135 @@ void Connector::setupServer() {
         -1) {
         std::cerr << "Failed to set SO_REUSEADDR" << std::endl;
         close(serverFd);
-        exit(EXIT_FAILURE);
+        return false;
     }
-
-    setNonBlocking(serverFd);
-
-    sockaddr_in serverAddr;
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
-    serverAddr.sin_port = htons(port);
 
     if (bind(serverFd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) ==
         -1) {
         std::cerr << "Failed to bind socker" << std::endl;
         close(serverFd);
-        exit(EXIT_FAILURE);
+        return false;
     }
 
     if (listen(serverFd, 10) == -1) {
         std::cerr << "Failed to listen on socket" << std::endl;
         close(serverFd);
-        exit(EXIT_FAILURE);
+        return false;
     }
 
-    kq = kqueue();
-    if (kq == -1) {
-        std::cerr << "Failed to create kqueue" << std::endl;
+    struct kevent event;
+    EV_SET(&event, serverFd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
+    if (kevent(kq, &event, 1, NULL, 0, NULL) == -1) {
+        std::cerr << "Failed to add event" << std::endl;
         close(serverFd);
-        exit(EXIT_FAILURE);
+        return false;
     }
 
-    addEvent(serverFd, EVFILT_READ, EV_ADD);
+    serverSokets.push_back(serverFd);
+    return true;
 }
 
-void Connector::handleConnections() {
-    struct kevent events[10];
+void Connector::start() {
     while (true) {
-        int nev = kevent(kq, changes.data(), changes.size(), events, 10, NULL);
-        changes.clear();
-        if (nev == -1) {
-            std::cerr << "kevent failed: " << strerror(errno) << std::endl;
+        struct kevent events[10];
+        int nevents = kevent(kq, NULL, 0, events, 10, NULL);
+        if (nevents == -1) {
+            std::cerr << "kevent failed while waiting for events" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        for (int i = 0; i < nevents; ++i) {
+            handleEvent(events[i]);
+        }
+    }
+}
+
+void Connector::handleEvent(struct kevent& event) {
+    if (event.filter == EVFILT_READ) {
+        int fd = event.ident;
+
+        if (std::find(serverSokets.begin(), serverSokets.end(), fd) !=
+            serverSokets.end()) {
+            // Accept new connection
+            if (!acceptConnection(fd)) {
+                std::cerr << "Failed to accept connection" << std::endl;
+            }
+        } else {
+            // Handle request
+            handleRequest(fd);
+        }
+    }
+}
+
+bool Connector::acceptConnection(int serverFd) {
+    sockaddr_in clientAddr;
+    socklen_t clientAddrLen = sizeof(clientAddr);
+    int clientFd =
+        accept(serverFd, (struct sockaddr*)&clientAddr, &clientAddrLen);
+    if (clientFd == -1) {
+        std::cerr << "Failed to accept connection: " << strerror(errno)
+                  << std::endl;
+        return false;
+    }
+
+    setNonBlocking(clientFd);
+
+    struct kevent event;
+    EV_SET(&event, clientFd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
+    if (kevent(kq, &event, 1, NULL, 0, NULL) == -1) {
+        std::cerr << "Failed to add event" << std::endl;
+        close(clientFd);
+        return false;
+    }
+
+    // 클라이언트 주소 정보를 저장
+    clientAddresses[clientFd] = clientAddr;
+
+    std::cout << "\nConnection accepted" << std::endl;
+    // 클라이언트 주소 정보 출력. TODO: 추후 삭제!!!
+    std::cout << "Client IP: " << inet_ntoa(clientAddr.sin_addr) << std::endl;
+    std::cout << "Client port: " << ntohs(clientAddr.sin_port) << std::endl;
+    return true;
+}
+
+void Connector::handleRequest(int client_fd) {
+    std::string request;
+    char buffer[BUFFER_SIZE];
+
+    while (true) {
+        int bytes_read = recv(client_fd, buffer, sizeof(buffer), 0);
+
+        if (bytes_read < 0) {
+            // Check if it's a non-blocking mode error (temporary condition)
+            // or a genuine failure (permanent error)
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // std::cerr << "Data is not ready yet." << std::endl;
+                break;
+            } else {
+                std::cerr << "Failed to read from socket: " << strerror(errno)
+                          << std::endl;
+                close(client_fd);
+                return;
+            }
+        } else if (bytes_read == 0) {
+            std::cerr << "Connection closed by client." << std::endl;
             break;
         }
 
-        for (int i = 0; i < nev; i++) {
-            int fd = events[i].ident;
-            if (fd == serverFd) {
-                sockaddr_in clientAddr;
-                socklen_t clientAddrLen = sizeof(clientAddr);
-                int clientFd = accept(serverFd, (struct sockaddr*)&clientAddr,
-                                      &clientAddrLen);
-                if (clientFd == -1) {
-                    std::cerr
-                        << "Failed to accept connection: " << strerror(errno)
-                        << std::endl;
-                    continue;
-                }
-                setNonBlocking(clientFd);
-                addEvent(clientFd, EVFILT_READ, EV_ADD);
-
-                // 클라이언트 주소 정보를 저장
-                clientAddresses[clientFd] = clientAddr;
-
-                // 클라이언트 IP 주소와 포트 번호 출력
-                std::string ip_address = inet_ntoa(clientAddr.sin_addr);
-                int port = ntohs(clientAddr.sin_port);
-                std::cout << "\nClient IP Address: " << ip_address << std::endl;
-                std::cout << "Client Port: " << port << std::endl;
-            } else {
-                // [클라이언트 주소 정보를 출력 (getpeername 사용 불가)]
-                // sockaddr_in AddrForTest;
-                // socklen_t AddrLenForTest = sizeof(AddrForTest);
-                // getpeername(fd, (struct sockaddr*)&AddrForTest,
-                //             &AddrLenForTest);
-                // std::cout << "\nClient IP Address: "
-                //           << inet_ntoa(AddrForTest.sin_addr) <<
-                //           std::endl;
-                // std::cout << "Client Port: "
-                //           << ntohs(AddrForTest.sin_port) << std::endl;
-
-                // [서버 주소 정보를 출력 (getsockname 사용 가능)]
-                // sockaddr_in AddrForTest;
-                // socklen_t AddrLenForTest = sizeof(AddrForTest);
-                // getsockname(fd, (struct sockaddr*)&AddrForTest,
-                //             &AddrLenForTest);
-                // std::cout << "Local Port  : " << AddrForTest.sin_port
-                //           << std::endl;
-                // std::cout << "Local IP address: "
-                //           << inet_ntoa(AddrForTest.sin_addr) <<
-                //           std::endl;
-
-                // [클라이언트 주소 정보를 출력 (clientAddresses 사용)]
-                // sockaddr_in clientAddr = clientAddresses[fd];
-                // std::string ip_address = inet_ntoa(clientAddr.sin_addr);
-                // int port = ntohs(clientAddr.sin_port);
-                // std::cout << "\nClient IP Address: " << ip_address <<
-                // std::endl; std::cout << "Client Port: " << port << std::endl;
-                handleRequest(fd);
-                close(fd);
-            }
-        }
+        request.append(buffer, bytes_read);
+        std::cout << bytes_read << " bytes read. Request message appended"
+                  << std::endl;
     }
+
+    // prepare request, serverAddr, and clientAddr
+    sockaddr_in serverAddr;
+    socklen_t serverAddrLen = sizeof(serverAddr);
+    getsockname(client_fd, (struct sockaddr*)&serverAddr, &serverAddrLen);
+    sockaddr_in clientAddr = clientAddresses[client_fd];
+
+    std::string response =
+        Manager::run(request, RequestData(serverAddr, clientAddr));
+    send(client_fd, response.c_str(), response.size(), 0);
 }
 
 void Connector::setNonBlocking(int fd) {
@@ -151,10 +185,4 @@ void Connector::setNonBlocking(int fd) {
         std::cerr << "Failed to set non-blocking" << std::endl;
         exit(EXIT_FAILURE);
     }
-}
-
-void Connector::addEvent(int fd, int filter, int flags) {
-    struct kevent change;
-    EV_SET(&change, fd, filter, flags, 0, 0, nullptr);
-    changes.push_back(change);
 }

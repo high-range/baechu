@@ -184,7 +184,6 @@ void Request::parseMessage(std::string& requestMessage,
                     requestData.setBody(token);
                     token = "";
                     state = BodyEnd;
-                    std::cout << "body: " << requestData.body << std::endl;
                 } else
                     throw ResponseData(400);
                 break;
