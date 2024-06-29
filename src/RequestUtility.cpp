@@ -97,7 +97,7 @@ std::string RequestUtility::th_strtrim(const std::string& src, c_uchar target) {
         }
     }
     if (start <= end) {
-        return 0;
+        return "";
     }
     return src.substr(start, end - start);
 }
@@ -125,8 +125,7 @@ long long RequestUtility::strtonum(const std::string& str) {
     return num;
 }
 
-long long RequestUtility::hexTonum(const std::string& str)
-{
+long long RequestUtility::hexTonum(const std::string& str) {
     std::stringstream ss;
     long long num;
 

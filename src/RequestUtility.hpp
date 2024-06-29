@@ -23,6 +23,7 @@ class RequestUtility {
     static bool isNum(const std::string& str);
     static long long strtonum(const std::string& str);
     static long long hexTonum(const std::string& str);
+
     friend class Request;
 };
 
