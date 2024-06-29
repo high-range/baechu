@@ -16,8 +16,6 @@
 
 // FOR DEVELOPMENT
 
-static std::string _rootDirectory = std::string(getenv("PWD"));
-
 static std::vector<std::string> _getCgiExtensions() {
     std::vector<std::string> cgiExtensions;
     cgiExtensions.push_back(".py");
@@ -81,30 +79,12 @@ Worker::Worker(const RequestData& request) : request(request) {
 }
 
 std::string Worker::getFullPath(const std::string& path) {
+    std::string location = path.substr(0, path.rfind('/') + 1);
+
     Configuration& config = Configuration::getInstance();
+    std::string root = config.getRootDirectory(port, location, domain);
 
-    std::string rootDirectory = config.getRootDirectory(domain, port, path);
-
-    // TODO : getRootDirectory should be changed to longest prefix matching
-    // (exact matching -> longest prefix matching)
-    if (rootDirectory.empty()) {
-        rootDirectory += "test/static";
-    }
-    // else if (!rootDirectory.empty() && rootDirectory.back() != '/') {
-    //     rootDirectory += '/';
-    // }
-
-    // Construct the full path
-    std::string fullPath = rootDirectory + path;
-
-    // Normalize the path to avoid issues with double slashes
-    // for (std::string::size_type pos = fullPath.find("//");
-    //      pos != std::string::npos; pos = fullPath.find("//")) {
-    //     fullPath.erase(pos, 1);
-    // }
-    // std::cout << "Root directory: " << rootDirectory << std::endl;
-    // std::cout << "Full path: " << fullPath << std::endl;
-    return fullPath;
+    return root + path;
 }
 
 ResponseData Worker::handleStaticRequest() {
