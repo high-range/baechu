@@ -31,7 +31,7 @@ bool RequestUtility::isPchar(c_uchar* str) {
 }
 
 bool RequestUtility::isHexDigit(c_uchar c) {
-    std::string HexAlpha = "ABCDEF";
+    std::string HexAlpha = "ABCDEFabcdef";
 
     if (isdigit(c)) {
         return true;
