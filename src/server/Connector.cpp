@@ -41,7 +41,6 @@ bool Connector::addServer(int port) {
     serverAddr.sin_addr.s_addr = INADDR_ANY;
     serverAddr.sin_port = htons(port);
 
-    // Set SO_REUSEADDR option
     int opt = 1;
     if (setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) ==
         -1) {
@@ -52,7 +51,7 @@ bool Connector::addServer(int port) {
 
     if (bind(serverFd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) ==
         -1) {
-        std::cerr << "Failed to bind socker" << std::endl;
+        std::cerr << "Failed to bind socket on port " << port << std::endl;
         close(serverFd);
         return false;
     }
@@ -66,19 +65,20 @@ bool Connector::addServer(int port) {
     struct kevent event;
     EV_SET(&event, serverFd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
     if (kevent(kq, &event, 1, NULL, 0, NULL) == -1) {
-        std::cerr << "Failed to add event" << std::endl;
+        std::cerr << "Failed to add event to kqueue" << std::endl;
         close(serverFd);
         return false;
     }
 
     serverSokets.push_back(serverFd);
+    std::cout << "Server started on port " << port << std::endl;
     return true;
 }
 
 void Connector::start() {
     while (true) {
-        struct kevent events[10];
-        int nevents = kevent(kq, NULL, 0, events, 10, NULL);
+        struct kevent events[MAX_EVENTS];
+        int nevents = kevent(kq, NULL, 0, events, MAX_EVENTS, NULL);
         if (nevents == -1) {
             std::cerr << "kevent failed while waiting for events" << std::endl;
             exit(EXIT_FAILURE);
@@ -92,17 +92,14 @@ void Connector::start() {
 
 void Connector::handleEvent(struct kevent& event) {
     if (event.filter == EVFILT_READ) {
-        int fd = event.ident;
-
-        if (std::find(serverSokets.begin(), serverSokets.end(), fd) !=
-            serverSokets.end()) {
-            // Accept new connection
-            if (!acceptConnection(fd)) {
-                std::cerr << "Failed to accept connection" << std::endl;
+        if (clientAddresses.find(event.ident) == clientAddresses.end()) {
+            // 새로운 클라이언트 연결 수락
+            if (acceptConnection(event.ident)) {
+                std::cout << "<Connection accepted>" << std::endl;
             }
         } else {
-            // Handle request
-            handleRequest(fd);
+            // 기존 클라이언트로부터의 요청 처리
+            handleRequest(event.ident);
         }
     }
 }
@@ -113,8 +110,7 @@ bool Connector::acceptConnection(int serverFd) {
     int clientFd =
         accept(serverFd, (struct sockaddr*)&clientAddr, &clientAddrLen);
     if (clientFd == -1) {
-        std::cerr << "Failed to accept connection: " << strerror(errno)
-                  << std::endl;
+        std::cerr << "Failed to accept connection" << std::endl;
         return false;
     }
 
@@ -138,6 +134,11 @@ bool Connector::acceptConnection(int serverFd) {
     return true;
 }
 
+void Connector::closeConnection(int clientFd) {
+    close(clientFd);
+    clientAddresses.erase(clientFd);
+}
+
 void Connector::handleRequest(int clientFd) {
     std::string request;
     char buffer[BUFFER_SIZE];
@@ -146,22 +147,16 @@ void Connector::handleRequest(int clientFd) {
         int bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
 
         if (bytesRead < 0) {
-            // Check if it's a non-blocking mode error (temporary condition)
-            // or a genuine failure (permanent error)
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // Data is not ready yet
                 break;
             } else {
-                std::cerr << "Failed to read from socket: " << strerror(errno)
-                          << std::endl;
-                close(clientFd);
-                clientAddresses.erase(clientFd);
+                std::cerr << "Failed to read from socket" << std::endl;
+                closeConnection(clientFd);
                 return;
             }
         } else if (bytesRead == 0) {
-            std::cerr << "<Connection closed>" << std::endl;
-            close(clientFd);
-            clientAddresses.erase(clientFd);
+            closeConnection(clientFd);
+            std::cout << "<Connection closed>" << std::endl;
             return;
         }
 
@@ -170,26 +165,36 @@ void Connector::handleRequest(int clientFd) {
                   << std::endl;
     }
 
-    // Prepare request, serverAddr, and clientAddr
     sockaddr_in serverAddr;
     socklen_t serverAddrLen = sizeof(serverAddr);
     getsockname(clientFd, (struct sockaddr*)&serverAddr, &serverAddrLen);
     sockaddr_in clientAddr = clientAddresses[clientFd];
 
-    // Process the request and get the response
     std::string response =
         Manager::run(request, RequestData(serverAddr, clientAddr));
 
-    // Send the response
-    ssize_t bytesSent = send(clientFd, response.c_str(), response.size(), 0);
-    if (bytesSent == -1) {
-        std::cerr << "Failed to send response to client: " << strerror(errno)
-                  << std::endl;
-    } else {
-        // 클라이언트 주소 정보 출력. TODO: 추후 삭제
-        std::cout << "Response sent to " << inet_ntoa(clientAddr.sin_addr)
-                  << ":" << ntohs(clientAddr.sin_port) << std::endl;
+    size_t totalBytesSent = 0;
+    while (totalBytesSent < response.size()) {
+        ssize_t bytesSent = send(clientFd, response.c_str() + totalBytesSent,
+                                 response.size() - totalBytesSent, 0);
+        if (bytesSent == -1) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                continue;
+            } else {
+                std::cerr << "Failed to send response to client" << std::endl;
+                break;
+            }
+        }
+        totalBytesSent += bytesSent;
     }
+
+    // if (totalBytesSent == response.size()) {
+    //     std::cout << "Response sent to " << inet_ntoa(clientAddr.sin_addr)
+    //               << ":" << ntohs(clientAddr.sin_port) << std::endl;
+    // }
+
+    closeConnection(clientFd);
+    std::cout << "<Connection closed>" << std::endl;
 }
 
 void Connector::setNonBlocking(int fd) {
