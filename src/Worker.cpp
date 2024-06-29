@@ -90,9 +90,7 @@ std::string Worker::getFullPath(const std::string& path) {
 ResponseData Worker::handleStaticRequest() {
     const std::string& method = request.getMethod();
 
-    if (host.empty()) {
-        return ResponseData(400);
-    } else if (method == GET) {
+    if (method == GET) {
         return doGet();
     } else if (method == POST) {
         return doPost();
