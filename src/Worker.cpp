@@ -45,11 +45,12 @@ Worker::Worker(const RequestData& request) : request(request) {
     size_t colonPos = host.find(':');
     if (colonPos != std::string::npos) {
         domain = host.substr(0, colonPos);
-        port = host.substr(colonPos + 1);
     } else {
         domain = host;
-        port = "80";
     }
+
+    ip = request.getServerIP();
+    port = request.getServerPort();
 
     path = request.getPath();
     fullPath = getFullPath(path);

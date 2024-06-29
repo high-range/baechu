@@ -30,6 +30,7 @@ class Worker {
 
     std::string host;
     std::string domain;
+    std::string ip;
     std::string port;
 
     std::string path;
