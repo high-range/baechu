@@ -13,6 +13,11 @@ Configuration& Configuration::getInstance() {
     return *configuration_;
 }
 
+Configuration::~Configuration() {
+    if (configuration_ != NULL) delete configuration_;
+    configuration_ = NULL;
+}
+
 // Method to initialize the Configuration with a filename
 void Configuration::initialize(const std::string& filename) {
     parseConfigFile(filename);
