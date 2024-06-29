@@ -131,51 +131,65 @@ bool Connector::acceptConnection(int serverFd) {
     // 클라이언트 주소 정보를 저장
     clientAddresses[clientFd] = clientAddr;
 
-    std::cout << "\nConnection accepted" << std::endl;
-    // 클라이언트 주소 정보 출력. TODO: 추후 삭제!!!
-    std::cout << "Client IP: " << inet_ntoa(clientAddr.sin_addr) << std::endl;
-    std::cout << "Client port: " << ntohs(clientAddr.sin_port) << std::endl;
+    std::cout << "\n<Connection accepted>" << std::endl;
+    // 클라이언트 주소 정보 출력. TODO: 추후 삭제
+    std::cout << "Request came from " << inet_ntoa(clientAddr.sin_addr) << ":"
+              << ntohs(clientAddr.sin_port) << std::endl;
     return true;
 }
 
-void Connector::handleRequest(int client_fd) {
+void Connector::handleRequest(int clientFd) {
     std::string request;
     char buffer[BUFFER_SIZE];
 
     while (true) {
-        int bytes_read = recv(client_fd, buffer, sizeof(buffer), 0);
+        int bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
 
-        if (bytes_read < 0) {
+        if (bytesRead < 0) {
             // Check if it's a non-blocking mode error (temporary condition)
             // or a genuine failure (permanent error)
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // std::cerr << "Data is not ready yet." << std::endl;
+                // Data is not ready yet
                 break;
             } else {
                 std::cerr << "Failed to read from socket: " << strerror(errno)
                           << std::endl;
-                close(client_fd);
+                close(clientFd);
+                clientAddresses.erase(clientFd);
                 return;
             }
-        } else if (bytes_read == 0) {
-            std::cerr << "Connection closed by client." << std::endl;
-            break;
+        } else if (bytesRead == 0) {
+            std::cerr << "<Connection closed>" << std::endl;
+            close(clientFd);
+            clientAddresses.erase(clientFd);
+            return;
         }
 
-        request.append(buffer, bytes_read);
-        std::cout << bytes_read << " bytes read. Request message appended"
+        request.append(buffer, bytesRead);
+        std::cout << bytesRead << " bytes read (Request message appended)"
                   << std::endl;
     }
 
-    // prepare request, serverAddr, and clientAddr
+    // Prepare request, serverAddr, and clientAddr
     sockaddr_in serverAddr;
     socklen_t serverAddrLen = sizeof(serverAddr);
-    getsockname(client_fd, (struct sockaddr*)&serverAddr, &serverAddrLen);
-    sockaddr_in clientAddr = clientAddresses[client_fd];
+    getsockname(clientFd, (struct sockaddr*)&serverAddr, &serverAddrLen);
+    sockaddr_in clientAddr = clientAddresses[clientFd];
 
+    // Process the request and get the response
     std::string response =
         Manager::run(request, RequestData(serverAddr, clientAddr));
-    send(client_fd, response.c_str(), response.size(), 0);
+
+    // Send the response
+    ssize_t bytesSent = send(clientFd, response.c_str(), response.size(), 0);
+    if (bytesSent == -1) {
+        std::cerr << "Failed to send response to client: " << strerror(errno)
+                  << std::endl;
+    } else {
+        // 클라이언트 주소 정보 출력. TODO: 추후 삭제
+        std::cout << "Response sent to " << inet_ntoa(clientAddr.sin_addr)
+                  << ":" << ntohs(clientAddr.sin_port) << std::endl;
+    }
 }
 
 void Connector::setNonBlocking(int fd) {
