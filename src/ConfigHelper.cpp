@@ -15,7 +15,6 @@ const std::set<std::string> createValidDirectiveKeys() {
     std::set<std::string> s;
     s.insert("allow");
     s.insert("deny");
-    s.insert("error_log");
     s.insert("error_page");
     s.insert("listen");
     s.insert("root");
@@ -24,20 +23,15 @@ const std::set<std::string> createValidDirectiveKeys() {
     s.insert("client_max_body_size");
     s.insert("rewrite");
     s.insert("default_type");
-    s.insert("log_format");
     s.insert("server_name");
     s.insert("worker_processes");
     s.insert("user");
-    s.insert("pid");
     s.insert("worker_connections");
     s.insert("charset");
-    s.insert("ssl_protocols");
-    s.insert("ssl_prefer_server_ciphers");
-    s.insert("access_log");
     s.insert("include");
     s.insert("sendfile");
-    s.insert("keepalive_timeout");
     s.insert("return");
+    s.insert("keepalive_timeout");
     return s;
 }
 
@@ -108,6 +102,14 @@ const std::set<std::string> createValidEventsDirectives() {
     return s;
 }
 
+const std::set<std::string> createValidMethods() {
+    std::set<std::string> s;
+    s.insert("GET");
+    s.insert("POST");
+    s.insert("DELETE");
+    return s;
+}
+
 const std::set<std::string> valid_block_names = createValidBlockNames();
 const std::set<std::string> valid_directive_keys = createValidDirectiveKeys();
 const std::set<std::string> valid_main_directives = createValidMainDirectives();
@@ -118,6 +120,7 @@ const std::set<std::string> valid_location_directives =
     createValidLocationDirectives();
 const std::set<std::string> valid_events_directives =
     createValidEventsDirectives();
+const std::set<std::string> valid_methods = createValidMethods();
 
 bool isValidLocationBlockName(const std::string& name) {
     // "location" 다음의 경로 추출
@@ -160,6 +163,10 @@ bool isValidKeyInBlock(const std::string& block_name, const std::string& key) {
                valid_events_directives.end();
     }
     return true;
+}
+
+bool isValidMethos(const std::string& method) {
+    return valid_methods.find(method) != valid_methods.end();
 }
 
 // 앞,뒤 tap,space 없애주는 함수
