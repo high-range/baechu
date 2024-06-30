@@ -37,12 +37,10 @@ static std::string lower(std::string s) {
 }
 
 Worker::Worker(const RequestData& request) : request(request) {
-    header = request.getHeader();
-
     ip = request.getServerIP();
     port = request.getServerPort();
 
-    std::string host = header[HOST_HEADER];
+    std::string host = request.getHeader()[HOST_HEADER];
     size_t colonPos = host.find(':');
     if (colonPos != std::string::npos) {
         serverName = host.substr(0, colonPos);
@@ -360,8 +358,8 @@ std::string Worker::runCgi() {
 CgiEnvMap Worker::createCgiEnvMap() {
     CgiEnvMap envMap;
     envMap["AUTH_TYPE"] = "";
-    envMap["CONTENT_LENGTH"] = header[CONTENT_LENGTH_HEADER];
-    envMap["CONTENT_TYPE"] = header[CONTENT_TYPE_HEADER];
+    envMap["CONTENT_LENGTH"] = request.getHeader()[CONTENT_LENGTH_HEADER];
+    envMap["CONTENT_TYPE"] = request.getHeader()[CONTENT_TYPE_HEADER];
     envMap["GATEWAY_INTERFACE"] = GATEWAY_INTERFACE;
     envMap["PATH_INFO"] = pathInfo;
     envMap["PATH_TRANSLATED"] = "";  // TODO: rootDir + pathInfo

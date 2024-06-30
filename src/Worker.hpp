@@ -27,8 +27,6 @@ class Worker {
   private:
     const RequestData& request;
 
-    std::map<std::string, std::string> header;  // Response header
-
     std::string ip;
     std::string port;
     std::string serverName;
