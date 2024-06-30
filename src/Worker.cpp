@@ -208,9 +208,8 @@ ResponseData Worker::doGet() {
         return ResponseData(404);
     }
 
-    std::vector<std::string> indexes;
-    indexes.push_back("index.html");
-
+    std::vector<std::string> indexes =
+        config.getIndexList(ip, port, serverName, location);
     for (std::vector<std::string>::iterator it = indexes.begin();
          it != indexes.end(); it++) {
         std::string indexPath = fullPath + *it;
