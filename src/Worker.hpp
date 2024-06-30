@@ -35,6 +35,7 @@ class Worker {
     std::string port;
 
     std::string path;
+    std::string location;
     std::string fullPath;
 
     bool isStatic;
