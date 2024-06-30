@@ -50,17 +50,16 @@ Worker::Worker(const RequestData& request) : request(request) {
 
     method = request.getMethod();
     path = request.getPath();
+    location = path.substr(0, path.rfind('/') + 1);
     fullPath = getFullPath(path);
 
     isStatic = true;
 }
 
 std::string Worker::getFullPath(const std::string& path) {
-    location = path.substr(0, path.rfind('/') + 1);
-
     Configuration& config = Configuration::getInstance();
-    std::string root = config.getRootDirectory(ip, port, serverName, location);
 
+    std::string root = config.getRootDirectory(ip, port, serverName, location);
     return root + path;
 }
 
