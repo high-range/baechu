@@ -16,29 +16,42 @@ class Configuration {
   public:
     // Static method to get the single instance of Configuration
     static Configuration& getInstance();
-    ~Configuration();
 
     // Method to initialize the Configuration with a filename
     void initialize(const std::string& filename);
 
     // get information
-    std::string getRootDirectory(const std::string& path) const;
-    std::string getRootDirectory(const std::string& port_number,
-                                 const std::string& location,
-                                 const std::string& server_name) const;
-    std::string getClientMaxBodySize(const std::string& port_number,
+    std::string getRootDirectory(const std::string& ip, const std::string& port,
+                                 const std::string& server_name,
+                                 const std::string& location) const;
+    std::string getClientMaxBodySize(const std::string& ip,
+                                     const std::string& port,
+                                     const std::string& server_name,
                                      const std::string& location) const;
     std::string getDefaultPort() const;
-    std::vector<std::string> getCgiExtensions(const std::string& path) const;
-    bool isMethodAllowedFor(const std::string& port_number,
+    bool isMethodAllowedFor(const std::string& ip, const std::string& port,
+                            const std::string& server_name,
                             const std::string& location,
                             const std::string& method) const;
-    std::string getAllowedMethods(const std::string& port_number,
-                                  const std::string& location) const;
-    bool isDirectoryListingEnabled(const std::string& port_number,
+    std::vector<std::string> getAllowedMethods(
+        const std::string& ip, const std::string& port,
+        const std::string& server_name, const std::string& location) const;
+    bool isDirectoryListingEnabled(const std::string& ip,
+                                   const std::string& port,
+                                   const std::string& server_name,
                                    const std::string& location) const;
-    std::string getErrorPageFromServer(const std::string& path) const;
+    std::string getErrorPageFromServer(const std::string& ip,
+                                       const std::string& port,
+                                       const std::string& server_name,
+                                       const std::string& status_code) const;
     std::vector<std::string> getPortNumbers() const;
+    std::vector<std::string> getIndexList(const std::string& ip,
+                                          const std::string& port,
+                                          const std::string& server_name,
+                                          const std::string& location) const;
+    std::string getCgiPath(const std::string& ip, const std::string& port,
+                           const std::string& server_name,
+                           const std::string& extension) const;
 
   private:
     // Private constructor to prevent instantiation
@@ -48,7 +61,8 @@ class Configuration {
     // parsing
     void parseConfigFile(const std::string& filename);
     bool parseBlock(std::ifstream& file, Block& current_block);
-    Block getServerBlockWithPortAndName(const std::string& port_number,
+    Block getServerBlockWithPortAndName(const std::string& ip,
+                                        const std::string& port,
                                         const std::string& server_name) const;
 
     // error check
@@ -57,12 +71,13 @@ class Configuration {
                                      const std::string& upper_block) const;
     bool isServerHavePort() const;
     bool checkMethods() const;
+    bool checkErrorPage() const;
+    bool isValidListen(const std::string& listen_value) const;
+    bool isValidCgiPath() const;
+    bool isDuplicatedHttp() const;
 
-    Block getLocationBlockWithPort(const std::string& port_number,
-                                   const std::string& location) const;
-    Block getServerBlockWithPortHelper(const std::vector<Block>& blocks,
-                                       const std::string& port_number) const;
-    Block getServerBlockWithPort(const std::string& path) const;
+    Block getLongestMatchingLocation(const Block& server,
+                                     const std::string& request_location) const;
 
     std::map<std::string, std::string> simple_directives;
     std::vector<Block> blocks;
@@ -72,6 +87,6 @@ std::string trim(const std::string& str);
 bool isValidBlockName(const std::string& name);
 bool isValidDirectiveKey(const std::string& key);
 bool isValidKeyInBlock(const std::string& block_name, const std::string& key);
-bool isValidMethos(const std::string& method);
+bool isValidMethods(const std::string& method);
 int countMatchingPrefixLength(const std::string& location,
                               const std::string& request_location);
