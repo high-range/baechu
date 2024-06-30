@@ -2,7 +2,7 @@
 
 #include <string>
 
-typedef unsigned char uchar;
+typedef std::string::iterator StrIter;
 
 class RequestData;
 class Configuration;
@@ -12,7 +12,7 @@ class Request {
     virtual ~Request() = 0;
     static void parseMessage(std::string& requestMessage,
                              RequestData& requestData);
-    static std::string parseBodyByContentLength(uchar* begin,
+    static std::string parseBodyByContentLength(std::string body,
                                                 std::string length);
-    static std::string parseBodyByTransferEncoding(uchar* begin, uchar* end);
+    static std::string parseBodyByTransferEncoding(StrIter begin);
 };

@@ -2,72 +2,74 @@
 
 #include <sstream>
 
-bool RequestUtility::isObsFold(c_uchar* str) {
-    return isCRLF(str) && isWS(str[2]);
+bool RequestUtility::isObsFold(StrIter begin) {
+    return isCRLF(begin) && isWS(begin + 2);
 }
 
-bool RequestUtility::isWS(c_uchar c) { return c == ' ' || c == '\t'; }
-
-bool RequestUtility::isFieldVchar(c_uchar c) {
-    return isgraph(c) || (c >= 128 && c <= 255);
+bool RequestUtility::isWS(StrIter begin) {
+    return *begin == ' ' || *begin == '\t';
 }
 
-bool RequestUtility::isPchar(c_uchar* str) {
+bool RequestUtility::isFieldVchar(StrIter begin) { return isgraph(*begin); }
+
+bool RequestUtility::isPchar(StrIter begin) {
     std::string subDelims = "!$&'()*+,;=";
 
-    if (str[0] == '%' && isHexDigit(str[1]) && isHexDigit(str[2])) {
+    if (*begin == '%' && isHexDigit(begin + 1) && isHexDigit(begin + 2)) {
         return true;
     }  // pct-encoded check;
-    if (isalpha(str[0]) || isdigit(str[0]) || str[0] == '-' || str[0] == '.' ||
-        str[0] == '_' || str[0] == '~' || str[0] == ':' || str[0] == '@') {
+    if (isalpha(*begin) || isdigit(*begin) || *begin == '-' || *begin == '.' ||
+        *begin == '_' || *begin == '~' || *begin == ':' || *begin == '@') {
         return true;
     }  // unreserved, ':', '@' check
     for (size_t i = 0; i < subDelims.size(); i++) {
-        if (str[0] == subDelims[i]) {
+        if (*begin == subDelims[i]) {
             return true;
         }
     }  // sub-delims check
     return false;
 }
 
-bool RequestUtility::isHexDigit(c_uchar c) {
+bool RequestUtility::isHexDigit(StrIter begin) {
     std::string HexAlpha = "ABCDEFabcdef";
 
-    if (isdigit(c)) {
+    if (isdigit(*begin)) {
         return true;
     }
     for (int i = 0; HexAlpha[i] != '\0'; i++) {
-        if (c == HexAlpha[i]) {
+        if (*begin == HexAlpha[i]) {
             return true;
         }
     }
     return false;
 }
 
-bool RequestUtility::isHttpVersion(c_uchar* str) {
-    return str[0] == 'H' && str[1] == 'T' && str[2] == 'T' && str[3] == 'P' &&
-           str[4] == '/' && isdigit(str[5]) && str[6] == '.' && isdigit(str[7]);
+bool RequestUtility::isHttpVersion(StrIter begin) {
+    return *begin == 'H' && *(begin + 1) == 'T' && *(begin + 2) == 'T' &&
+           *(begin + 3) == 'P' && *(begin + 4) == '/' &&
+           isdigit(*(begin + 5)) && *(begin + 6) == '.' &&
+           isdigit(*(begin + 7));
 }
 
-bool RequestUtility::isTchar(c_uchar c) {
+bool RequestUtility::isTchar(StrIter begin) {
     std::string delimiter = "(),/:;<=>?@[\\]{}";
 
-    if (!isgraph(c) || c == '\"') {
+    if (!isgraph(*begin) || *begin == '\"') {
         return false;
     }
     for (size_t i = 0; i < delimiter.size(); i++) {
-        if (c == delimiter[i]) {
+        if (*begin == delimiter[i]) {
             return false;
         }
     }
     return true;
 }
 
-bool RequestUtility::isCRLF(c_uchar* str) {
-    return str[0] == '\r' && str[1] == '\n';
+bool RequestUtility::isCRLF(StrIter begin) {
+    return *begin == '\r' && *(begin + 1) == '\n';
 }
 
-std::string RequestUtility::th_substr(c_uchar* src, const size_t start,
+std::string RequestUtility::th_substr(StrIter it, const size_t start,
                                       const size_t end) {
     std::string result;
 
@@ -75,7 +77,7 @@ std::string RequestUtility::th_substr(c_uchar* src, const size_t start,
         return result;
     }
     for (size_t i = start; i < end; i++) {
-        result += src[i];
+        result += *(it + i);
     }
     return result;
 }
