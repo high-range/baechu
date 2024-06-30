@@ -16,6 +16,7 @@ class Configuration {
   public:
     // Static method to get the single instance of Configuration
     static Configuration& getInstance();
+    ~Configuration();
 
     // Method to initialize the Configuration with a filename
     void initialize(const std::string& filename);

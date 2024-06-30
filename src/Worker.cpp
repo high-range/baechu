@@ -1,6 +1,7 @@
 #include "Worker.hpp"
 
 #include <dirent.h>
+#include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -92,7 +93,9 @@ ResponseData Worker::handleStaticRequest() {
     if (method == GET) {
         return doGet();
     } else if (method == POST) {
-        return doPost();
+        return ResponseData(405);
+    } else if (method == PUT) {
+        return doPut();
     } else if (method == DELETE) {
         return doDelete();
     }
@@ -219,34 +222,28 @@ ResponseData Worker::doGet() {
     return ResponseData(403);
 }
 
-std::string generateFilename() {
-    std::time_t now = std::time(0);
-    int random_number = std::rand() % 9000 + 1;
-    std::ostringstream filename;
-    filename << "saved_file_" << now << "_" << random_number << ".html";
-    // return filename.str();
-    return "saved_file.html";
-}
-
-bool saveFile(const std::string& dir, const std::string& content) {
-    std::string filename = generateFilename();
-    std::string path = dir + "/" + filename;
-    std::ofstream file(path);
-    if (file.is_open()) {
-        file << content;
-        file.close();
-        return true;
-    } else {
-        std::cerr << "Error opening file for writing" << std::endl;
-        return false;
+ResponseData Worker::doPut() {
+    struct stat buf;
+    if (stat(fullPath.c_str(), &buf) == 0) {
+        if (S_ISDIR(buf.st_mode)) {
+            return ResponseData(405);
+        }
+        if (S_ISREG(buf.st_mode)) {
+            // modify the file
+            std::ofstream file(fullPath, std::ios::trunc);
+            if (file.is_open()) {
+                file << request.getBody();
+                file.close();
+                return ResponseData(200);
+            }
+        }
     }
-}
-
-ResponseData Worker::doPost() {
-    std::string content = request.getBody();
-
-    if (saveFile(fullPath, content)) {
-        return ResponseData(201, content);  // Return 201 Created if successful
+    // create a new file
+    std::ofstream file(fullPath, std::ios::out);
+    if (file.is_open()) {
+        file << request.getBody();
+        file.close();
+        return ResponseData(201);
     }
     return ResponseData(500);
 }
@@ -254,7 +251,7 @@ ResponseData Worker::doPost() {
 ResponseData Worker::doDelete() {
     struct stat buffer;
     if (stat(fullPath.c_str(), &buffer) == 0) {
-        if (std::remove(fullPath.c_str()) == 0) {
+        if (remove(fullPath.c_str()) == 0) {
             return ResponseData(204);  // Return 204 No Content if successful
         }
         return ResponseData(500);
