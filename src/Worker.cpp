@@ -82,7 +82,7 @@ std::string Worker::getFullPath(const std::string& path) {
     location = path.substr(0, path.rfind('/') + 1);
 
     Configuration& config = Configuration::getInstance();
-    std::string root = config.getRootDirectory(port, location, serverName);
+    std::string root = config.getRootDirectory(ip, port, serverName, location);
 
     return root + path;
 }
@@ -91,7 +91,7 @@ ResponseData Worker::handleStaticRequest() {
     Configuration& config = Configuration::getInstance();
 
     const std::string& method = request.getMethod();
-    if (!config.isMethodAllowedFor(port, location, method)) {
+    if (!config.isMethodAllowedFor(ip, port, serverName, location, method)) {
         return ResponseData(405);
     }
 
@@ -220,7 +220,7 @@ ResponseData Worker::doGet() {
         }
     }
 
-    if (config.isDirectoryListingEnabled(port, location)) {
+    if (config.isDirectoryListingEnabled(ip, port, serverName, location)) {
         return doGetDirectory();
     }
 
