@@ -79,7 +79,7 @@ Worker::Worker(const RequestData& request) : request(request) {
 }
 
 std::string Worker::getFullPath(const std::string& path) {
-    std::string location = path.substr(0, path.rfind('/') + 1);
+    location = path.substr(0, path.rfind('/') + 1);
 
     Configuration& config = Configuration::getInstance();
     std::string root = config.getRootDirectory(port, location, domain);
@@ -103,7 +103,7 @@ ResponseData Worker::handleStaticRequest() {
 ResponseData Worker::doGetFile() {
     std::ifstream file(fullPath);
     if (!file.is_open()) {
-        throw "file not found";
+        return ResponseData(403);
     }
 
     std::ostringstream ss;
@@ -149,7 +149,7 @@ ResponseData Worker::doGetFile() {
 ResponseData Worker::doGetDirectory() {
     DIR* dir = opendir(fullPath.c_str());
     if (dir == nullptr) {
-        throw "could not open directory";
+        return ResponseData(403);
     }
 
     std::ostringstream ss;
@@ -185,16 +185,39 @@ ResponseData Worker::doGetDirectory() {
 }
 
 ResponseData Worker::doGet() {
+    Configuration& config = Configuration::getInstance();
+
     struct stat buf;
-    if (stat(fullPath.c_str(), &buf) == 0) {
+    if (stat(fullPath.c_str(), &buf) != 0) {
+        return ResponseData(404);
+    }
+
+    if (path.back() != '/') {
         if (S_ISREG(buf.st_mode) || S_ISLNK(buf.st_mode)) {
             return doGetFile();
         } else if (S_ISDIR(buf.st_mode)) {
-            return doGetDirectory();
+            return ResponseData(301);
+        }
+        return ResponseData(404);
+    }
+
+    std::vector<std::string> indexes;
+    indexes.push_back("index.html");
+
+    for (std::vector<std::string>::iterator it = indexes.begin();
+         it != indexes.end(); it++) {
+        std::string indexPath = fullPath + *it;
+        if (stat(indexPath.c_str(), &buf) == 0) {
+            fullPath = indexPath;
+            return doGetFile();
         }
     }
 
-    throw ResponseData(404);
+    if (config.isDirectoryListingEnabled(port, location)) {
+        return doGetDirectory();
+    }
+
+    return ResponseData(403);
 }
 
 std::string generateFilename() {
