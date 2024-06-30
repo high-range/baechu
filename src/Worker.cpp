@@ -88,7 +88,12 @@ std::string Worker::getFullPath(const std::string& path) {
 }
 
 ResponseData Worker::handleStaticRequest() {
+    Configuration& config = Configuration::getInstance();
+
     const std::string& method = request.getMethod();
+    if (!config.isMethodAllowedFor(port, location, method)) {
+        return ResponseData(405);
+    }
 
     if (method == GET) {
         return doGet();
