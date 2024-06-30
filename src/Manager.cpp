@@ -53,9 +53,12 @@ std::string Manager::run(std::string requestMessage, RequestData requestData) {
         // std::cout << "Request parsed" << std::endl;
         // showRequestData(requestData);
 
-        ResponseData responseData = Worker(requestData).handleRequest();
+        Worker worker = Worker(requestData);
+        ResponseData responseData = worker.handleRequest();
+        responseData = worker.redirectOrUse(responseData);
         return (Response::messageGenerate(responseData));
     } catch (ResponseData& responseData) {
+        responseData = Worker(requestData).redirectOrUse(responseData);
         return (Response::messageGenerate(responseData));
     }
 }

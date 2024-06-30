@@ -23,16 +23,16 @@ class Worker {
     Worker(const RequestData& request);
 
     ResponseData handleRequest();
+    ResponseData redirectOrUse(ResponseData& response);
 
   private:
     const RequestData& request;
-
-    std::map<std::string, std::string> header;  // Response header
 
     std::string ip;
     std::string port;
     std::string serverName;
 
+    std::string method;
     std::string path;
     std::string location;
     std::string fullPath;
@@ -40,6 +40,10 @@ class Worker {
     bool isStatic;
     std::string pathInfo;
     std::string scriptName;
+
+    Worker redirectedTo(const std::string& path);
+
+    void setPath(const std::string& path);
 
     ResponseData handleStaticRequest();
 

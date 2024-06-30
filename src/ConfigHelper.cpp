@@ -15,13 +15,12 @@ const std::set<std::string> createValidDirectiveKeys() {
     std::set<std::string> s;
     s.insert("allow");
     s.insert("deny");
-    s.insert("error_page");
-    s.insert("listen");
-    s.insert("root");
+    s.insert("error_page");  // syntax check O
+    s.insert("listen");      // syntax check O
+    s.insert("root");        // syntax check O
     s.insert("index");
-    s.insert("limit_except");
-    s.insert("client_max_body_size");
-    s.insert("rewrite");
+    s.insert("limit_except");          // syntax check O
+    s.insert("client_max_body_size");  // syntax check O
     s.insert("default_type");
     s.insert("server_name");
     s.insert("worker_processes");
@@ -30,8 +29,11 @@ const std::set<std::string> createValidDirectiveKeys() {
     s.insert("charset");
     s.insert("include");
     s.insert("sendfile");
+    s.insert("rewrite");
     s.insert("return");
     s.insert("keepalive_timeout");
+    s.insert("cgi");
+    s.insert("autoindex");
     return s;
 }
 
@@ -76,6 +78,7 @@ const std::set<std::string> createValidServerDirectives() {
     s.insert("type");
     s.insert("listen");
     s.insert("error_log");
+    s.insert("cgi");
     return s;
 }
 
@@ -92,6 +95,7 @@ const std::set<std::string> createValidLocationDirectives() {
     s.insert("index");
     s.insert("limit_except");
     s.insert("return");
+    s.insert("autoindex");
     return s;
 }
 
@@ -165,7 +169,7 @@ bool isValidKeyInBlock(const std::string& block_name, const std::string& key) {
     return true;
 }
 
-bool isValidMethos(const std::string& method) {
+bool isValidMethods(const std::string& method) {
     return valid_methods.find(method) != valid_methods.end();
 }
 

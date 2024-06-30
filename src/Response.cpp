@@ -96,8 +96,13 @@ static std::string camel(std::string s) {
 std::string Response::messageGenerate(ResponseData data) {
     std::ostringstream ss;
 
-    ss << "HTTP/1.1 " << data.statusCode << " "
-       << getReasonPhrase(data.statusCode) << "\r\n";
+    ss << "HTTP/1.1 " << data.statusCode;
+    if (data.reasonPharse.empty()) {
+        ss << " " << getReasonPhrase(data.statusCode);
+    } else {
+        ss << data.reasonPharse;  // containing leading space
+    }
+    ss << "\r\n";
 
     Headers headers = data.headers;
     headers["content-length"] = std::to_string(data.body.length());

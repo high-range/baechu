@@ -36,59 +36,44 @@ static std::string lower(std::string s) {
     return s;
 }
 
-Worker::Worker(const RequestData& request) : request(request) {
-    header = request.getHeader();
+static std::string getServerName(std::string host) {
+    size_t colonPos = host.find(':');
+    if (colonPos == std::string::npos) {
+        return host;
+    }
+    return host.substr(0, colonPos);
+}
 
+void Worker::setPath(const std::string& path) {
+    this->path = path;
+    location = path.substr(0, path.rfind('/') + 1);
+    fullPath = getFullPath(path);
+}
+
+Worker::Worker(const RequestData& request) : request(request) {
     ip = request.getServerIP();
     port = request.getServerPort();
+    serverName = getServerName(request.getHeader()[HOST_HEADER]);
 
-    std::string host = header[HOST_HEADER];
-    size_t colonPos = host.find(':');
-    if (colonPos != std::string::npos) {
-        serverName = host.substr(0, colonPos);
-    } else {
-        serverName = host;
-    }
-
-    path = request.getPath();
-    fullPath = getFullPath(path);
+    method = request.getMethod();
+    setPath(request.getPath());
 
     isStatic = true;
-
-    size_t dotPos = path.rfind('.');
-    if (dotPos != std::string::npos) {
-        size_t dirPos = path.find('/', dotPos);
-        if (dirPos == std::string::npos) {
-            dirPos = path.length();
-        }
-
-        std::string ext = path.substr(dotPos, dirPos - dotPos);
-        ext = lower(ext);
-
-        for (std::vector<std::string>::iterator it = _cgiExtensions.begin();
-             it != _cgiExtensions.end(); it++) {
-            if (ext == *it) {
-                isStatic = false;
-                pathInfo = path.substr(dirPos);
-                scriptName = path.substr(0, dirPos);
-                fullPath = getFullPath(scriptName);
-                break;
-            }
-        }
-    }
 }
 
 std::string Worker::getFullPath(const std::string& path) {
-    location = path.substr(0, path.rfind('/') + 1);
-
     Configuration& config = Configuration::getInstance();
-    std::string root = config.getRootDirectory(port, location, serverName);
 
+    std::string root = config.getRootDirectory(ip, port, serverName, location);
     return root + path;
 }
 
 ResponseData Worker::handleStaticRequest() {
-    const std::string& method = request.getMethod();
+    Configuration& config = Configuration::getInstance();
+
+    if (!config.isMethodAllowedFor(ip, port, serverName, location, method)) {
+        return ResponseData(405);
+    }
 
     if (method == GET) {
         return doGet();
@@ -203,9 +188,8 @@ ResponseData Worker::doGet() {
         return ResponseData(404);
     }
 
-    std::vector<std::string> indexes;
-    indexes.push_back("index.html");
-
+    std::vector<std::string> indexes =
+        config.getIndexList(ip, port, serverName, location);
     for (std::vector<std::string>::iterator it = indexes.begin();
          it != indexes.end(); it++) {
         std::string indexPath = fullPath + *it;
@@ -215,7 +199,7 @@ ResponseData Worker::doGet() {
         }
     }
 
-    if (config.isDirectoryListingEnabled(port, location)) {
+    if (config.isDirectoryListingEnabled(ip, port, serverName, location)) {
         return doGetDirectory();
     }
 
@@ -284,15 +268,25 @@ ResponseData Worker::handleDynamicRequest() {
     }
 
     int statusCode = 200;
+    std::string reasonPhrase;
     if (headers.find("status") != headers.end()) {
-        statusCode = std::atoi(headers["status"].c_str());
+        std::istringstream ss(headers["status"]);
+
+        ss >> statusCode;
+
+        std::string s;
+        while (ss >> s) {
+            reasonPhrase += " " + s;  // include leading space
+        }
+
         headers.erase("status");
     }
 
     std::string body;
     std::getline(ss, body, '\0');
 
-    return ResponseData(statusCode, headers, body);
+    return ResponseData(statusCode, headers, body)
+        .withReasonPhrase(reasonPhrase);
 }
 
 char** makeEnvp(CgiEnvMap& envMap) {
@@ -346,8 +340,8 @@ std::string Worker::runCgi() {
 CgiEnvMap Worker::createCgiEnvMap() {
     CgiEnvMap envMap;
     envMap["AUTH_TYPE"] = "";
-    envMap["CONTENT_LENGTH"] = header[CONTENT_LENGTH_HEADER];
-    envMap["CONTENT_TYPE"] = header[CONTENT_TYPE_HEADER];
+    envMap["CONTENT_LENGTH"] = request.getHeader()[CONTENT_LENGTH_HEADER];
+    envMap["CONTENT_TYPE"] = request.getHeader()[CONTENT_TYPE_HEADER];
     envMap["GATEWAY_INTERFACE"] = GATEWAY_INTERFACE;
     envMap["PATH_INFO"] = pathInfo;
     envMap["PATH_TRANSLATED"] = "";  // TODO: rootDir + pathInfo
@@ -356,7 +350,7 @@ CgiEnvMap Worker::createCgiEnvMap() {
     envMap["REMOTE_HOST"] = "";
     envMap["REMOTE_IDENT"] = "";
     envMap["REMOTE_USER"] = "";
-    envMap["REQUEST_METHOD"] = request.getMethod();
+    envMap["REQUEST_METHOD"] = method;
     envMap["SCRIPT_NAME"] = scriptName;
     envMap["SERVER_NAME"] = "";  // TODO: Configuration::Block::name
     envMap["SERVER_PORT"] = request.getServerPort();
@@ -366,8 +360,49 @@ CgiEnvMap Worker::createCgiEnvMap() {
 }
 
 ResponseData Worker::handleRequest() {
+    size_t dotPos = path.rfind('.');
+    if (dotPos != std::string::npos) {
+        size_t dirPos = path.find('/', dotPos);
+        if (dirPos == std::string::npos) {
+            dirPos = path.length();
+        }
+
+        std::string ext = path.substr(dotPos, dirPos - dotPos);
+        ext = lower(ext);
+
+        for (std::vector<std::string>::iterator it = _cgiExtensions.begin();
+             it != _cgiExtensions.end(); it++) {
+            if (ext == *it) {
+                isStatic = false;
+                pathInfo = path.substr(dirPos);
+                scriptName = path.substr(0, dirPos);
+                fullPath = getFullPath(scriptName);
+                break;
+            }
+        }
+    }
+
     if (isStatic) {
         return handleStaticRequest();
     }
     return handleDynamicRequest();
+}
+
+Worker Worker::redirectedTo(const std::string& path) {
+    method = GET;
+    setPath(path);
+    isStatic = true;
+    return *this;
+}
+
+ResponseData Worker::redirectOrUse(ResponseData& response) {
+    Configuration& config = Configuration::getInstance();
+
+    std::string errorPage = config.getErrorPageFromServer(
+        ip, port, serverName, std::to_string(response.statusCode));
+    if (!errorPage.empty()) {
+        return redirectedTo(errorPage).handleRequest();
+    }
+
+    return response;
 }
