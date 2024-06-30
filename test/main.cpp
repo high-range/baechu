@@ -10,8 +10,11 @@
 
 int main(int argc, char* argv[]) {
     std::string filename = "./conf/default.conf";
-    if (argc > 1) {
+    if (argc == 2) {
         filename = argv[1];
+    } else if (argc > 2) {
+        std::cerr << "Usage: ./webserv <config_file>" << std::endl;
+        return 1;
     }
 
     Configuration& config = Configuration::getInstance();
