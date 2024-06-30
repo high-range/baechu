@@ -1,0 +1,24 @@
+PUT /hello.txt HTTP/1.1
+content-length: 5
+accept-encoding: gzip, deflate, br
+Accept: */*
+User-Agent: Thunder Client (https://www.thunderclient.com)
+Content-Type: image/jpeg
+Connection: keep-alive
+Host: localhost:8080
+
+hello
+PUT /hello.txt HTTP/1.1
+accept-encoding: gzip, deflate, br
+Accept: */*
+User-Agent: Thunder Client (https://www.thunderclient.com)
+Transfer-Encoding: chunked
+Content-Type: image/jpeg
+Connection: keep-alive
+Host: localhost:8080
+
+5
+hello
+0
+
+

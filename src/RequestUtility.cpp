@@ -31,10 +31,10 @@ bool RequestUtility::isPchar(StrIter begin) {
 }
 
 bool RequestUtility::isHexDigit(StrIter begin) {
-    std::string HexAlpha = "0123456789ABCDEFabcdef";
+    std::string HexBase = "0123456789ABCDEFabcdef";
 
-    for (size_t i = 0; i < HexAlpha.size(); i++) {
-        if (*begin == HexAlpha[i]) {
+    for (size_t i = 0; i < HexBase.size(); i++) {
+        if (*begin == HexBase[i]) {
             return true;
         }
     }
