@@ -11,3 +11,8 @@ ResponseData::ResponseData(int statusCode) {
     this->headers = Headers();
     this->body = "";
 }
+
+ResponseData ResponseData::withReasonPhrase(std::string reasonPhrase) {
+    this->reasonPharse = reasonPhrase;
+    return *this;
+}

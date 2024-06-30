@@ -289,15 +289,25 @@ ResponseData Worker::handleDynamicRequest() {
     }
 
     int statusCode = 200;
+    std::string reasonPhrase;
     if (headers.find("status") != headers.end()) {
-        statusCode = std::atoi(headers["status"].c_str());
+        std::istringstream ss(headers["status"]);
+
+        ss >> statusCode;
+
+        std::string s;
+        while (ss >> s) {
+            reasonPhrase += " " + s;  // include leading space
+        }
+
         headers.erase("status");
     }
 
     std::string body;
     std::getline(ss, body, '\0');
 
-    return ResponseData(statusCode, headers, body);
+    return ResponseData(statusCode, headers, body)
+        .withReasonPhrase(reasonPhrase);
 }
 
 char** makeEnvp(CgiEnvMap& envMap) {
