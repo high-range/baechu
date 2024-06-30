@@ -77,4 +77,12 @@ void RequestData::setHeader(const std::string& key, const std::string& value) {
         header[key] += ", " + value;
 }
 
+void RequestData::setBodyHeader(const std::string& key,
+                                const std::string& value) {
+    if (bodyHeader.find(key) == bodyHeader.end()) {
+        bodyHeader[key] = value;
+    } else
+        bodyHeader[key] += ", " + value;
+}
+
 void RequestData::setBody(const std::string& body) { this->body = body; }

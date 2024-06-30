@@ -31,12 +31,9 @@ bool RequestUtility::isPchar(StrIter begin) {
 }
 
 bool RequestUtility::isHexDigit(StrIter begin) {
-    std::string HexAlpha = "ABCDEFabcdef";
+    std::string HexAlpha = "0123456789ABCDEFabcdef";
 
-    if (isdigit(*begin)) {
-        return true;
-    }
-    for (int i = 0; HexAlpha[i] != '\0'; i++) {
+    for (size_t i = 0; i < HexAlpha.size(); i++) {
         if (*begin == HexAlpha[i]) {
             return true;
         }
@@ -45,10 +42,7 @@ bool RequestUtility::isHexDigit(StrIter begin) {
 }
 
 bool RequestUtility::isHttpVersion(StrIter begin) {
-    return *begin == 'H' && *(begin + 1) == 'T' && *(begin + 2) == 'T' &&
-           *(begin + 3) == 'P' && *(begin + 4) == '/' &&
-           isdigit(*(begin + 5)) && *(begin + 6) == '.' &&
-           isdigit(*(begin + 7));
+    return std::string(begin, begin + 8) == "HTTP/1.1";
 }
 
 bool RequestUtility::isTchar(StrIter begin) {
@@ -67,19 +61,6 @@ bool RequestUtility::isTchar(StrIter begin) {
 
 bool RequestUtility::isCRLF(StrIter begin) {
     return *begin == '\r' && *(begin + 1) == '\n';
-}
-
-std::string RequestUtility::th_substr(StrIter it, const size_t start,
-                                      const size_t end) {
-    std::string result;
-
-    if (start >= end) {
-        return result;
-    }
-    for (size_t i = start; i < end; i++) {
-        result += *(it + i);
-    }
-    return result;
 }
 
 std::string RequestUtility::th_strtrim(const std::string& src, c_uchar target) {
@@ -117,10 +98,16 @@ bool RequestUtility::isNum(const std::string& str) {
 }
 
 long long RequestUtility::strtonum(const std::string& str) {
-    std::istringstream iss(str);
+    std::stringstream ss(str);
     long long num;
 
-    iss >> num;
+    if (ss.fail()) {
+        return -1;
+    }
+    ss >> num;
+    if (!ss.eof()) {
+        return -1;
+    }
     if (*str.end() == 'M') {
         num *= 1024 * 1024;
     }

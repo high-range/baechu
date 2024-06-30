@@ -15,6 +15,29 @@ void makeLog(std::string requestMessage) {
     logFile.close();
 }
 
+void showRequestData(RequestData& requestData) {
+    std::map<std::string, std::string> header = requestData.getHeader();
+    std::map<std::string, std::string>::iterator begin = header.begin();
+    std::map<std::string, std::string>::iterator end = header.end();
+    std::cout << "\n-----------------------------\n";
+    std::cout << "Client IP: " << requestData.getClientIP() << std::endl;
+    std::cout << "Client Port: " << requestData.getClientPort() << std::endl;
+    std::cout << "Server IP: " << requestData.getServerIP() << std::endl;
+    std::cout << "Server Port: " << requestData.getServerPort() << std::endl;
+    std::cout << "\n-----------------------------\n";
+    std::cout << "Method: " << requestData.getMethod() << std::endl;
+    std::cout << "RequestTarget: " << requestData.getRequestTarget()
+              << std::endl;
+    std::cout << "Path: " << requestData.getPath() << std::endl;
+    std::cout << "Query: " << requestData.getQuery() << std::endl;
+    std::cout << "Version: " << requestData.getVersion() << std::endl;
+    std::cout << "<Header>" << std::endl;
+    for (; begin != end; begin++) {
+        std::cout << begin->first << ": " << begin->second << std::endl;
+    }
+    std::cout << "Body: " << requestData.getBody() << std::endl;
+}
+
 std::string Manager::run(std::string requestMessage, RequestData requestData) {
     try {
         if (requestMessage.empty()) {
@@ -26,8 +49,8 @@ std::string Manager::run(std::string requestMessage, RequestData requestData) {
         // std::cout << "Request message logged" << std::endl;
 
         Request::parseMessage(requestMessage, requestData);
-
-        // std::cout << "Request parsed" << std::endl;
+        std::cout << "Request parsed" << std::endl;
+        showRequestData(requestData);
 
         ResponseData responseData = Worker(requestData).handleRequest();
         return (Response::messageGenerate(responseData));

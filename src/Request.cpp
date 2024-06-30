@@ -114,7 +114,7 @@ void Request::parseMessage(std::string& requestMessage,
                 break;
             case FieldName:
                 if (RequestUtility::isTchar(begin)) {
-                    fieldname += tolower(*begin);
+                    fieldname += std::tolower(*begin);
                 } else if (*begin == ':') {
                     state = WhiteSpace;
                 } else
@@ -181,7 +181,7 @@ void Request::parseMessage(std::string& requestMessage,
                     token = parseBodyByContentLength(std::string(begin, end),
                                                      bodyHeaderValue);
                     requestData.setBody(token);
-                    token = "";
+                    token.clear();
                     state = BodyEnd;
                 } else
                     throw ResponseData(400);
@@ -189,9 +189,10 @@ void Request::parseMessage(std::string& requestMessage,
             case TransferEncoding:
                 bodyHeaderValue = requestData.header[bodyHeaderName];
                 if (bodyHeaderValue == "chunked") {
-                    token = parseBodyByTransferEncoding(begin);
+                    token = parseBodyByTransferEncoding(std::string(begin, end),
+                                                        requestData.bodyHeader);
                     requestData.setBody(token);
-                    token = "";
+                    token.clear();
                     state = BodyEnd;
                 } else
                     throw ResponseData(400);
@@ -205,27 +206,32 @@ void Request::parseMessage(std::string& requestMessage,
 std::string Request::parseBodyByContentLength(std::string body,
                                               std::string length) {
     std::stringstream bodyStream(body);
-    // Configuration config = Configuration::getInstance();
     long long bodyLength = RequestUtility::strtonum(length);
-    std::string buffer(bodyLength, '\0');
+    // Configuration config = Configuration::getInstance();
 
     if (bodyStream.fail()) {
-        throw ResponseData(400);  // stream 생성 실패에 대한 throw
+        throw ResponseData(400);
     } else if (bodyLength < 0)
-        throw ResponseData(400);  // content-length가 음수일 때 throw
+        throw ResponseData(400);
+    std::string buffer(bodyLength, '\0');
     bodyStream.read(&buffer[0], bodyLength);
+    if (body.size() != buffer.size()) {
+        throw ResponseData(400);
+    }
     // if (bodyStream.gcount() != bodyLength) {
     //     throw ResponseData(400);
     // } // max body size 관련 처리 필요, 일단 주석처리
     return buffer;
 }
 
-std::string Request::parseBodyByTransferEncoding(StrIter begin) {
-    ChunkState state;
-    std::string body, chunkData, chunkSizeStr, trailerField;
+std::string Request::parseBodyByTransferEncoding(std::string body,
+                                                 Header& bodyHeader) {
+    ChunkState state = Chunk;
+    std::string buffer, chunkData, chunkSizeStr;
+    std::string trailerFieldName, trailerFieldValue;
     long long chunkSizeNum;
+    StrIter begin = body.begin();
 
-    state = Chunk;
     while (true) {
         switch (state) {
             case Chunk:
@@ -252,25 +258,26 @@ std::string Request::parseBodyByTransferEncoding(StrIter begin) {
                 break;
             case ChunkExt:
                 if (RequestUtility::isCRLF(begin)) {
-                    begin++;
+                    begin += 2;
                     state = ChunkData;
-                }
-                begin++;
+                } else
+                    begin++;
                 break;
             case ChunkData:
                 if (RequestUtility::isCRLF(begin)) {
                     if (static_cast<long long>(chunkData.size()) ==
                         chunkSizeNum) {
-                        body += chunkData;
+                        buffer += chunkData;
                         chunkSizeStr.clear();
                         chunkData.clear();
                     } else
                         throw ResponseData(400);
-                    begin++;
+                    begin += 2;
                     state = Chunk;
-                } else
+                } else {
                     chunkData += *begin;
-                begin++;
+                    begin++;
+                }
                 break;
             case LastChunk:
                 if (*begin == '0')
@@ -285,10 +292,10 @@ std::string Request::parseBodyByTransferEncoding(StrIter begin) {
                 break;
             case LastChunkExt:
                 if (RequestUtility::isCRLF(begin)) {
-                    begin++;
+                    begin += 2;
                     state = TrailerStart;
-                }
-                begin++;
+                } else
+                    begin++;
                 break;
             case TrailerStart:
                 if (RequestUtility::isTchar(begin)) {
@@ -299,17 +306,17 @@ std::string Request::parseBodyByTransferEncoding(StrIter begin) {
                     throw ResponseData(400);
                 break;
             case TrailerFieldName:
-                if (*begin == ':') {
+                if (RequestUtility::isTchar(begin)) {
+                    trailerFieldName += std::tolower(*begin);
+                } else if (*begin == ':') {
                     state = TrailerWhiteSpace;
-                } else if (!RequestUtility::isTchar(begin)) {
+                } else
                     throw ResponseData(400);
-                }
-                trailerField += *begin;
                 begin++;
                 break;
             case TrailerWhiteSpace:
                 if (RequestUtility::isWS(begin)) {
-                    trailerField += *begin;
+                    trailerFieldValue += *begin;
                     begin++;
                 } else
                     state = TrailerFieldValue;
@@ -319,22 +326,20 @@ std::string Request::parseBodyByTransferEncoding(StrIter begin) {
                     state = TrailerFieldContent;
                 } else if (RequestUtility::isObsFold(begin)) {
                     state = TrailerObsFold;
-                } else if (RequestUtility::isCRLF(begin) &&
-                           RequestUtility::isCRLF(begin + 2)) {
-                    trailerField += *begin;
-                    trailerField += *(++begin);
-                    begin++;
-                    state = TrailerEnd;
                 } else if (RequestUtility::isCRLF(begin)) {
-                    trailerField += std::string(begin, begin + 2);
+                    trailerFieldValue =
+                        RequestUtility::th_strtrim(trailerFieldValue, ' ');
+                    bodyHeader[trailerFieldName] = trailerFieldValue;
+                    trailerFieldName.clear();
+                    trailerFieldValue.clear();
                     begin += 2;
-                    state = TrailerFieldName;
+                    state = TrailerEnd;
                 } else
                     throw ResponseData(400);
                 break;
             case TrailerFieldContent:
                 if (RequestUtility::isFieldVchar(begin)) {
-                    trailerField += *begin;
+                    trailerFieldValue += *begin;
                     begin++;
                 } else if (RequestUtility::isWS(begin)) {
                     state = TrailerWhiteSpace;
@@ -342,15 +347,18 @@ std::string Request::parseBodyByTransferEncoding(StrIter begin) {
                     state = TrailerFieldValue;
                 break;
             case TrailerObsFold:
-                trailerField += std::string(begin, begin + 2);
+                trailerFieldValue += std::string(begin, begin + 2);
                 state = TrailerWhiteSpace;
                 begin += 2;
                 break;
             case TrailerEnd:
-                trailerField += std::string(begin, begin + 2);
-                begin += 2;
+                if (RequestUtility::isCRLF(begin)) {
+                    begin += 2;
+                    return buffer;
+                } else
+                    state = TrailerFieldName;
                 break;
         }
     }
-    return body;
+    return "";
 }

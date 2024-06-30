@@ -18,8 +18,6 @@ class RequestUtility {
     static bool isHttpVersion(StrIter begin);
     static bool isTchar(StrIter begin);
     static bool isCRLF(StrIter begin);
-    static std::string th_substr(StrIter begin, const size_t start,
-                                 const size_t end);
     static std::string th_strtrim(const std::string& src, c_uchar target);
     static bool isNum(const std::string& str);
     static long long strtonum(const std::string& str);
