@@ -28,10 +28,9 @@ class Worker {
 
     std::map<std::string, std::string> header;  // Response header
 
-    std::string host;
-    std::string domain;
     std::string ip;
     std::string port;
+    std::string serverName;
 
     std::string path;
     std::string location;

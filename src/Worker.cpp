@@ -38,17 +38,16 @@ static std::string lower(std::string s) {
 Worker::Worker(const RequestData& request) : request(request) {
     header = request.getHeader();
 
-    host = header[HOST_HEADER];
-
-    size_t colonPos = host.find(':');
-    if (colonPos != std::string::npos) {
-        domain = host.substr(0, colonPos);
-    } else {
-        domain = host;
-    }
-
     ip = request.getServerIP();
     port = request.getServerPort();
+
+    std::string host = header[HOST_HEADER];
+    size_t colonPos = host.find(':');
+    if (colonPos != std::string::npos) {
+        serverName = host.substr(0, colonPos);
+    } else {
+        serverName = host;
+    }
 
     path = request.getPath();
     fullPath = getFullPath(path);
@@ -82,7 +81,7 @@ std::string Worker::getFullPath(const std::string& path) {
     location = path.substr(0, path.rfind('/') + 1);
 
     Configuration& config = Configuration::getInstance();
-    std::string root = config.getRootDirectory(port, location, domain);
+    std::string root = config.getRootDirectory(port, location, serverName);
 
     return root + path;
 }
