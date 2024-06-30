@@ -53,28 +53,6 @@ Worker::Worker(const RequestData& request) : request(request) {
     fullPath = getFullPath(path);
 
     isStatic = true;
-
-    size_t dotPos = path.rfind('.');
-    if (dotPos != std::string::npos) {
-        size_t dirPos = path.find('/', dotPos);
-        if (dirPos == std::string::npos) {
-            dirPos = path.length();
-        }
-
-        std::string ext = path.substr(dotPos, dirPos - dotPos);
-        ext = lower(ext);
-
-        for (std::vector<std::string>::iterator it = _cgiExtensions.begin();
-             it != _cgiExtensions.end(); it++) {
-            if (ext == *it) {
-                isStatic = false;
-                pathInfo = path.substr(dirPos);
-                scriptName = path.substr(0, dirPos);
-                fullPath = getFullPath(scriptName);
-                break;
-            }
-        }
-    }
 }
 
 std::string Worker::getFullPath(const std::string& path) {
@@ -378,6 +356,28 @@ CgiEnvMap Worker::createCgiEnvMap() {
 }
 
 ResponseData Worker::handleRequest() {
+    size_t dotPos = path.rfind('.');
+    if (dotPos != std::string::npos) {
+        size_t dirPos = path.find('/', dotPos);
+        if (dirPos == std::string::npos) {
+            dirPos = path.length();
+        }
+
+        std::string ext = path.substr(dotPos, dirPos - dotPos);
+        ext = lower(ext);
+
+        for (std::vector<std::string>::iterator it = _cgiExtensions.begin();
+             it != _cgiExtensions.end(); it++) {
+            if (ext == *it) {
+                isStatic = false;
+                pathInfo = path.substr(dirPos);
+                scriptName = path.substr(0, dirPos);
+                fullPath = getFullPath(scriptName);
+                break;
+            }
+        }
+    }
+
     if (isStatic) {
         return handleStaticRequest();
     }
