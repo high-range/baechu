@@ -49,8 +49,8 @@ std::string Manager::run(std::string requestMessage, RequestData requestData) {
         // std::cout << "Request message logged" << std::endl;
 
         Request::parseMessage(requestMessage, requestData);
-        std::cout << "Request parsed" << std::endl;
-        showRequestData(requestData);
+        // std::cout << "Request parsed" << std::endl;
+        // showRequestData(requestData);
 
         ResponseData responseData = Worker(requestData).handleRequest();
         return (Response::messageGenerate(responseData));
