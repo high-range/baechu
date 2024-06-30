@@ -21,6 +21,7 @@ class RequestData {
     } startLine;
     Header header;
     std::string body;
+    Header bodyHeader;
     // request message info
 
     struct ClientData {
@@ -39,6 +40,7 @@ class RequestData {
     void setQuery(const std::string& query);
     void setVersion(const std::string& version);
     void setHeader(const std::string& key, const std::string& value);
+    void setBodyHeader(const std::string& key, const std::string& value);
     void setBody(const std::string& body);
     const std::string getBodyHeaderName();
 

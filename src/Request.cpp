@@ -16,24 +16,23 @@ void Request::parseMessage(std::string& requestMessage,
     std::string token;
     std::string fieldname, fieldvalue;
     std::string bodyHeaderName, bodyHeaderValue;
-    uchar *begin, *end, input;
+    StrIter begin, end;
 
     state = RequestLineStart;
-    begin = reinterpret_cast<uchar*>(&requestMessage.front());
-    end = reinterpret_cast<uchar*>(&requestMessage.back() + 1);
-    while (begin != end) {
-        input = *begin;
+    begin = requestMessage.begin();
+    end = requestMessage.end();
+    while (true) {
         switch (state) {
             case RequestLineStart:
-                if (RequestUtility::isTchar(input)) {
+                if (RequestUtility::isTchar(begin)) {
                     state = Method;
                 } else
                     throw ResponseData(400);
                 break;
             case Method:
-                if (RequestUtility::isTchar(input)) {
-                    token += input;
-                } else if (input == ' ') {
+                if (RequestUtility::isTchar(begin)) {
+                    token += *begin;
+                } else if (*begin == ' ') {
                     state = MethodEnd;
                 } else
                     throw ResponseData(400);
@@ -41,27 +40,27 @@ void Request::parseMessage(std::string& requestMessage,
                 break;
             case MethodEnd:
                 requestData.setMethod(token);
-                token = "";
+                token.clear();
                 state = RequestTargetStart;
             case RequestTargetStart:
-                if (input == '/') {
+                if (*begin == '/') {
                     state = AbsolutePath;
                 } else
                     throw ResponseData(400);
                 break;
             case AbsolutePath:
-                if (RequestUtility::isPchar(begin) || input == '/') {
-                    token += input;
-                    if (input == '%') {
+                if (RequestUtility::isPchar(begin) || *begin == '/') {
+                    token += *begin;
+                    if (*begin == '%') {
                         token += *(++begin);
                         token += *(++begin);
                     }
-                } else if (input == '?') {
+                } else if (*begin == '?') {
                     requestData.setPath(token);
-                    token += input;
+                    token += *begin;
                     queryStart = token.size();
                     state = Query;
-                } else if (input == ' ') {
+                } else if (*begin == ' ') {
                     requestData.setPath(token);
                     state = RequestTargetEnd;
                 } else
@@ -69,14 +68,14 @@ void Request::parseMessage(std::string& requestMessage,
                 begin++;
                 break;
             case Query:
-                if (RequestUtility::isPchar(begin) || input == '/' ||
-                    input == '?') {
-                    token += input;
-                    if (input == '%') {
-                        token += *(++begin);
-                        token += *(++begin);
+                if (RequestUtility::isPchar(begin) || *begin == '/' ||
+                    *begin == '?') {
+                    token += *begin;
+                    if (*begin == '%') {
+                        token += std::string(begin + 1, begin + 3);
+                        begin += 2;
                     }
-                } else if (input == ' ') {
+                } else if (*begin == ' ') {
                     requestData.setQuery(token.substr(queryStart));
                     state = RequestTargetEnd;
                 } else
@@ -85,14 +84,14 @@ void Request::parseMessage(std::string& requestMessage,
                 break;
             case RequestTargetEnd:
                 requestData.setRequestTarget(token);
-                token = "";
+                token.clear();
                 state = HTTPVersion;
                 break;
             case HTTPVersion:
                 if (RequestUtility::isHttpVersion(begin)) {
-                    token = RequestUtility::th_substr(begin, 0, 8);
+                    token = std::string(begin, begin + 8);
                     requestData.setVersion(token);
-                    token = "";
+                    token.clear();
                     begin += 8;
                     state = StartLineEnd;
                 } else
@@ -106,7 +105,7 @@ void Request::parseMessage(std::string& requestMessage,
                     throw ResponseData(400);
                 break;
             case HeaderStart:
-                if (RequestUtility::isTchar(input)) {
+                if (RequestUtility::isTchar(begin)) {
                     state = FieldName;
                 } else if (RequestUtility::isCRLF(begin))
                     state = HeaderEnd;
@@ -114,50 +113,49 @@ void Request::parseMessage(std::string& requestMessage,
                     throw ResponseData(400);
                 break;
             case FieldName:
-                if (RequestUtility::isTchar(input)) {
-                    fieldname += tolower(input);
-                } else if (input == ':') {
+                if (RequestUtility::isTchar(begin)) {
+                    fieldname += std::tolower(*begin);
+                } else if (*begin == ':') {
                     state = WhiteSpace;
                 } else
                     throw ResponseData(400);
                 begin++;
                 break;
             case WhiteSpace:
-                if (RequestUtility::isWS(input)) {
-                    fieldvalue += input;
+                if (RequestUtility::isWS(begin)) {
+                    fieldvalue += *begin;
                     begin++;
                 } else
                     state = FieldValue;
                 break;
             case FieldValue:
-                if (RequestUtility::isFieldVchar(input)) {
+                if (RequestUtility::isFieldVchar(begin)) {
                     state = FieldContent;
                 } else if (RequestUtility::isObsFold(begin)) {
                     state = ObsFold;
                 } else if (RequestUtility::isCRLF(begin)) {
                     fieldvalue = RequestUtility::th_strtrim(fieldvalue, ' ');
                     requestData.setHeader(fieldname, fieldvalue);
-                    fieldname = "";
-                    fieldvalue = "";
+                    fieldname.clear();
+                    fieldvalue.clear();
                     begin += 2;
                     state = HeaderEnd;
                 } else
                     throw ResponseData(400);
                 break;
             case FieldContent:
-                if (RequestUtility::isFieldVchar(input)) {
-                    fieldvalue += input;
+                if (RequestUtility::isFieldVchar(begin)) {
+                    fieldvalue += *begin;
                     begin++;
-                } else if (RequestUtility::isWS(input)) {
+                } else if (RequestUtility::isWS(begin)) {
                     state = WhiteSpace;
                 } else
                     state = FieldValue;
                 break;
             case ObsFold:
-                fieldvalue += input;
-                fieldvalue += *(++begin);
+                fieldvalue += std::string(begin, begin + 2);
                 state = WhiteSpace;
-                begin++;
+                begin += 2;
                 break;
             case HeaderEnd:
                 if (RequestUtility::isCRLF(begin)) {
@@ -180,9 +178,10 @@ void Request::parseMessage(std::string& requestMessage,
             case ContentLength:
                 bodyHeaderValue = requestData.header[bodyHeaderName];
                 if (RequestUtility::isNum(bodyHeaderValue)) {
-                    token = parseBodyByContentLength(begin, bodyHeaderValue);
+                    token = parseBodyByContentLength(std::string(begin, end),
+                                                     bodyHeaderValue);
                     requestData.setBody(token);
-                    token = "";
+                    token.clear();
                     state = BodyEnd;
                 } else
                     throw ResponseData(400);
@@ -190,9 +189,10 @@ void Request::parseMessage(std::string& requestMessage,
             case TransferEncoding:
                 bodyHeaderValue = requestData.header[bodyHeaderName];
                 if (bodyHeaderValue == "chunked") {
-                    token = parseBodyByTransferEncoding(begin, end);
+                    token = parseBodyByTransferEncoding(std::string(begin, end),
+                                                        requestData.bodyHeader);
                     requestData.setBody(token);
-                    token = "";
+                    token.clear();
                     state = BodyEnd;
                 } else
                     throw ResponseData(400);
@@ -203,46 +203,51 @@ void Request::parseMessage(std::string& requestMessage,
     }
 }
 
-std::string Request::parseBodyByContentLength(uchar* begin,
+std::string Request::parseBodyByContentLength(std::string body,
                                               std::string length) {
-    std::istringstream bodyStream(std::string(reinterpret_cast<char*>(begin)));
-    Configuration config = Configuration::getInstance();
+    std::stringstream bodyStream(body);
     long long bodyLength = RequestUtility::strtonum(length);
-    std::string buffer(bodyLength, '\0');
+    // Configuration config = Configuration::getInstance();
 
     if (bodyStream.fail()) {
-        throw ResponseData(400);  // stream 생성 실패에 대한 throw
+        throw ResponseData(400);
     } else if (bodyLength < 0)
-        throw ResponseData(400);  // content-length가 음수일 때 throw
+        throw ResponseData(400);
+
+    std::string buffer(bodyLength, '\0');
     bodyStream.read(&buffer[0], bodyLength);
+
+    if (body.size() != buffer.size()) {
+        throw ResponseData(400);
+    }
     // if (bodyStream.gcount() != bodyLength) {
     //     throw ResponseData(400);
     // } // max body size 관련 처리 필요, 일단 주석처리
     return buffer;
 }
 
-std::string Request::parseBodyByTransferEncoding(uchar* begin, uchar* end) {
-    ChunkState state;
-    std::string body, chunkData, chunkSizeStr, trailerField;
+std::string Request::parseBodyByTransferEncoding(std::string body,
+                                                 Header& bodyHeader) {
+    ChunkState state = Chunk;
+    std::string buffer, chunkData, chunkSizeStr;
+    std::string trailerFieldName, trailerFieldValue;
     long long chunkSizeNum;
-    uchar input;
+    StrIter begin = body.begin();
 
-    state = Chunk;
-    while (begin != end) {
-        input = *begin;
+    while (true) {
         switch (state) {
             case Chunk:
-                if (input == '0') {
+                if (*begin == '0') {
                     state = LastChunk;
-                } else if (RequestUtility::isHexDigit(input)) {
+                } else if (RequestUtility::isHexDigit(begin)) {
                     state = ChunkSize;
                 } else
                     throw ResponseData(400);
                 break;
             case ChunkSize:
-                if (RequestUtility::isHexDigit(input)) {
-                    chunkSizeStr += input;
-                } else if (input == ';') {
+                if (RequestUtility::isHexDigit(begin)) {
+                    chunkSizeStr += *begin;
+                } else if (*begin == ';') {
                     chunkSizeNum = RequestUtility::hexTonum(chunkSizeStr);
                     state = ChunkExt;
                 } else if (RequestUtility::isCRLF(begin)) {
@@ -255,30 +260,31 @@ std::string Request::parseBodyByTransferEncoding(uchar* begin, uchar* end) {
                 break;
             case ChunkExt:
                 if (RequestUtility::isCRLF(begin)) {
-                    begin++;
+                    begin += 2;
                     state = ChunkData;
-                }
-                begin++;
+                } else
+                    begin++;
                 break;
             case ChunkData:
                 if (RequestUtility::isCRLF(begin)) {
                     if (static_cast<long long>(chunkData.size()) ==
                         chunkSizeNum) {
-                        body += chunkData;
-                        chunkSizeStr = "";
-                        chunkData = "";
+                        buffer += chunkData;
+                        chunkSizeStr.clear();
+                        chunkData.clear();
                     } else
                         throw ResponseData(400);
-                    begin++;
+                    begin += 2;
                     state = Chunk;
-                } else
-                    chunkData += input;
-                begin++;
+                } else {
+                    chunkData += *begin;
+                    begin++;
+                }
                 break;
             case LastChunk:
-                if (input == '0')
+                if (*begin == '0')
                     begin++;
-                else if (input == ';') {
+                else if (*begin == ';') {
                     state = LastChunkExt;
                 } else if (RequestUtility::isCRLF(begin)) {
                     begin += 2;
@@ -288,13 +294,13 @@ std::string Request::parseBodyByTransferEncoding(uchar* begin, uchar* end) {
                 break;
             case LastChunkExt:
                 if (RequestUtility::isCRLF(begin)) {
-                    begin++;
+                    begin += 2;
                     state = TrailerStart;
-                }
-                begin++;
+                } else
+                    begin++;
                 break;
             case TrailerStart:
-                if (RequestUtility::isTchar(input)) {
+                if (RequestUtility::isTchar(begin)) {
                     state = TrailerFieldName;
                 } else if (RequestUtility::isCRLF(begin)) {
                     state = TrailerEnd;
@@ -302,61 +308,59 @@ std::string Request::parseBodyByTransferEncoding(uchar* begin, uchar* end) {
                     throw ResponseData(400);
                 break;
             case TrailerFieldName:
-                if (input == ':') {
+                if (RequestUtility::isTchar(begin)) {
+                    trailerFieldName += std::tolower(*begin);
+                } else if (*begin == ':') {
                     state = TrailerWhiteSpace;
-                } else if (!RequestUtility::isTchar(input)) {
+                } else
                     throw ResponseData(400);
-                }
-                trailerField += input;
                 begin++;
                 break;
             case TrailerWhiteSpace:
-                if (RequestUtility::isWS(input)) {
-                    trailerField += input;
+                if (RequestUtility::isWS(begin)) {
+                    trailerFieldValue += *begin;
                     begin++;
                 } else
                     state = TrailerFieldValue;
                 break;
             case TrailerFieldValue:
-                if (RequestUtility::isFieldVchar(input)) {
+                if (RequestUtility::isFieldVchar(begin)) {
                     state = TrailerFieldContent;
                 } else if (RequestUtility::isObsFold(begin)) {
                     state = TrailerObsFold;
-                } else if (RequestUtility::isCRLF(begin) &&
-                           RequestUtility::isCRLF(begin + 2)) {
-                    trailerField += input;
-                    trailerField += *(++begin);
-                    begin++;
-                    state = TrailerEnd;
                 } else if (RequestUtility::isCRLF(begin)) {
-                    trailerField += input;
-                    trailerField += *(++begin);
-                    begin++;
-                    state = TrailerFieldName;
+                    trailerFieldValue =
+                        RequestUtility::th_strtrim(trailerFieldValue, ' ');
+                    bodyHeader[trailerFieldName] = trailerFieldValue;
+                    trailerFieldName.clear();
+                    trailerFieldValue.clear();
+                    begin += 2;
+                    state = TrailerEnd;
                 } else
                     throw ResponseData(400);
                 break;
             case TrailerFieldContent:
-                if (RequestUtility::isFieldVchar(input)) {
-                    trailerField += input;
+                if (RequestUtility::isFieldVchar(begin)) {
+                    trailerFieldValue += *begin;
                     begin++;
-                } else if (RequestUtility::isWS(input)) {
+                } else if (RequestUtility::isWS(begin)) {
                     state = TrailerWhiteSpace;
                 } else
                     state = TrailerFieldValue;
                 break;
             case TrailerObsFold:
-                trailerField += input;
-                trailerField += *(++begin);
+                trailerFieldValue += std::string(begin, begin + 2);
                 state = TrailerWhiteSpace;
-                begin++;
+                begin += 2;
                 break;
             case TrailerEnd:
-                trailerField += input;
-                trailerField += *(++begin);
-                begin++;
+                if (RequestUtility::isCRLF(begin)) {
+                    begin += 2;
+                    return buffer;
+                } else
+                    state = TrailerFieldName;
                 break;
         }
     }
-    return body;
+    return "";
 }
