@@ -33,6 +33,7 @@ class Worker {
     std::string port;
     std::string serverName;
 
+    std::string method;
     std::string path;
     std::string location;
     std::string fullPath;

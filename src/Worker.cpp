@@ -50,6 +50,7 @@ Worker::Worker(const RequestData& request) : request(request) {
         serverName = host;
     }
 
+    method = request.getMethod();
     path = request.getPath();
     fullPath = getFullPath(path);
 
@@ -90,7 +91,6 @@ std::string Worker::getFullPath(const std::string& path) {
 ResponseData Worker::handleStaticRequest() {
     Configuration& config = Configuration::getInstance();
 
-    const std::string& method = request.getMethod();
     if (!config.isMethodAllowedFor(ip, port, serverName, location, method)) {
         return ResponseData(405);
     }
@@ -370,7 +370,7 @@ CgiEnvMap Worker::createCgiEnvMap() {
     envMap["REMOTE_HOST"] = "";
     envMap["REMOTE_IDENT"] = "";
     envMap["REMOTE_USER"] = "";
-    envMap["REQUEST_METHOD"] = request.getMethod();
+    envMap["REQUEST_METHOD"] = method;
     envMap["SCRIPT_NAME"] = scriptName;
     envMap["SERVER_NAME"] = "";  // TODO: Configuration::Block::name
     envMap["SERVER_PORT"] = request.getServerPort();
