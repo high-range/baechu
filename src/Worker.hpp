@@ -23,6 +23,7 @@ class Worker {
     Worker(const RequestData& request);
 
     ResponseData handleRequest();
+    ResponseData redirectOrUse(ResponseData& response);
 
   private:
     const RequestData& request;
@@ -39,6 +40,10 @@ class Worker {
     bool isStatic;
     std::string pathInfo;
     std::string scriptName;
+
+    Worker redirectedTo(const std::string& path);
+
+    void setPath(const std::string& path);
 
     ResponseData handleStaticRequest();
 

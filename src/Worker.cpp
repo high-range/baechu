@@ -36,22 +36,27 @@ static std::string lower(std::string s) {
     return s;
 }
 
+static std::string getServerName(std::string host) {
+    size_t colonPos = host.find(':');
+    if (colonPos == std::string::npos) {
+        return host;
+    }
+    return host.substr(0, colonPos);
+}
+
+void Worker::setPath(const std::string& path) {
+    this->path = path;
+    location = path.substr(0, path.rfind('/') + 1);
+    fullPath = getFullPath(path);
+}
+
 Worker::Worker(const RequestData& request) : request(request) {
     ip = request.getServerIP();
     port = request.getServerPort();
-
-    std::string host = request.getHeader()[HOST_HEADER];
-    size_t colonPos = host.find(':');
-    if (colonPos != std::string::npos) {
-        serverName = host.substr(0, colonPos);
-    } else {
-        serverName = host;
-    }
+    serverName = getServerName(request.getHeader()[HOST_HEADER]);
 
     method = request.getMethod();
-    path = request.getPath();
-    location = path.substr(0, path.rfind('/') + 1);
-    fullPath = getFullPath(path);
+    setPath(request.getPath());
 
     isStatic = true;
 }
@@ -381,4 +386,23 @@ ResponseData Worker::handleRequest() {
         return handleStaticRequest();
     }
     return handleDynamicRequest();
+}
+
+Worker Worker::redirectedTo(const std::string& path) {
+    method = GET;
+    setPath(path);
+    isStatic = true;
+    return *this;
+}
+
+ResponseData Worker::redirectOrUse(ResponseData& response) {
+    Configuration& config = Configuration::getInstance();
+
+    std::string errorPage = config.getErrorPageFromServer(
+        ip, port, serverName, std::to_string(response.statusCode));
+    if (!errorPage.empty()) {
+        return redirectedTo(errorPage).handleRequest();
+    }
+
+    return response;
 }
