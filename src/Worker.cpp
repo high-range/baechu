@@ -17,8 +17,6 @@
 
 // FOR DEVELOPMENT
 
-static std::string _rootDirectory = std::string(getenv("PWD"));
-
 static std::vector<std::string> _getCgiExtensions() {
     std::vector<std::string> cgiExtensions;
     cgiExtensions.push_back(".py");
@@ -41,15 +39,15 @@ static std::string lower(std::string s) {
 Worker::Worker(const RequestData& request) : request(request) {
     header = request.getHeader();
 
-    host = header[HOST_HEADER];
+    ip = request.getServerIP();
+    port = request.getServerPort();
 
+    std::string host = header[HOST_HEADER];
     size_t colonPos = host.find(':');
     if (colonPos != std::string::npos) {
-        domain = host.substr(0, colonPos);
-        port = host.substr(colonPos + 1);
+        serverName = host.substr(0, colonPos);
     } else {
-        domain = host;
-        port = "80";
+        serverName = host;
     }
 
     path = request.getPath();
@@ -81,38 +79,18 @@ Worker::Worker(const RequestData& request) : request(request) {
 }
 
 std::string Worker::getFullPath(const std::string& path) {
+    location = path.substr(0, path.rfind('/') + 1);
+
     Configuration& config = Configuration::getInstance();
+    std::string root = config.getRootDirectory(port, location, serverName);
 
-    std::string rootDirectory = config.getRootDirectory(domain, port, path);
-
-    // TODO : getRootDirectory should be changed to longest prefix matching
-    // (exact matching -> longest prefix matching)
-    if (rootDirectory.empty()) {
-        rootDirectory += "test/static";
-    }
-    // else if (!rootDirectory.empty() && rootDirectory.back() != '/') {
-    //     rootDirectory += '/';
-    // }
-
-    // Construct the full path
-    std::string fullPath = rootDirectory + path;
-
-    // Normalize the path to avoid issues with double slashes
-    // for (std::string::size_type pos = fullPath.find("//");
-    //      pos != std::string::npos; pos = fullPath.find("//")) {
-    //     fullPath.erase(pos, 1);
-    // }
-    std::cout << "Root directory: " << rootDirectory << std::endl;
-    std::cout << "Full path: " << fullPath << std::endl;
-    return fullPath;
+    return root + path;
 }
 
 ResponseData Worker::handleStaticRequest() {
     const std::string& method = request.getMethod();
 
-    if (host.empty()) {
-        return ResponseData(400);
-    } else if (method == GET) {
+    if (method == GET) {
         return doGet();
     } else if (method == POST) {
         return ResponseData(405);
@@ -127,7 +105,7 @@ ResponseData Worker::handleStaticRequest() {
 ResponseData Worker::doGetFile() {
     std::ifstream file(fullPath);
     if (!file.is_open()) {
-        throw "file not found";
+        return ResponseData(403);
     }
 
     std::ostringstream ss;
@@ -173,7 +151,7 @@ ResponseData Worker::doGetFile() {
 ResponseData Worker::doGetDirectory() {
     DIR* dir = opendir(fullPath.c_str());
     if (dir == nullptr) {
-        throw "could not open directory";
+        return ResponseData(403);
     }
 
     std::ostringstream ss;
@@ -209,16 +187,39 @@ ResponseData Worker::doGetDirectory() {
 }
 
 ResponseData Worker::doGet() {
+    Configuration& config = Configuration::getInstance();
+
     struct stat buf;
-    if (stat(fullPath.c_str(), &buf) == 0) {
+    if (stat(fullPath.c_str(), &buf) != 0) {
+        return ResponseData(404);
+    }
+
+    if (path.back() != '/') {
         if (S_ISREG(buf.st_mode) || S_ISLNK(buf.st_mode)) {
             return doGetFile();
         } else if (S_ISDIR(buf.st_mode)) {
-            return doGetDirectory();
+            return ResponseData(301);
+        }
+        return ResponseData(404);
+    }
+
+    std::vector<std::string> indexes;
+    indexes.push_back("index.html");
+
+    for (std::vector<std::string>::iterator it = indexes.begin();
+         it != indexes.end(); it++) {
+        std::string indexPath = fullPath + *it;
+        if (stat(indexPath.c_str(), &buf) == 0) {
+            fullPath = indexPath;
+            return doGetFile();
         }
     }
 
-    throw ResponseData(404);
+    if (config.isDirectoryListingEnabled(port, location)) {
+        return doGetDirectory();
+    }
+
+    return ResponseData(403);
 }
 
 ResponseData Worker::doPut() {

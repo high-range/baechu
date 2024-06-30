@@ -23,10 +23,22 @@ class Configuration {
 
     // get information
     std::string getRootDirectory(const std::string& path) const;
-    std::string getRootDirectory(const std::string& server_name,
-                                 const std::string& port_number,
-                                 const std::string& location) const;
-    std::string getClientMaxBodySize(const std::string& port_number) const;
+    std::string getRootDirectory(const std::string& port_number,
+                                 const std::string& location,
+                                 const std::string& server_name) const;
+    std::string getClientMaxBodySize(const std::string& port_number,
+                                     const std::string& location) const;
+    std::string getDefaultPort() const;
+    std::vector<std::string> getCgiExtensions(const std::string& path) const;
+    bool isMethodAllowedFor(const std::string& port_number,
+                            const std::string& location,
+                            const std::string& method) const;
+    std::string getAllowedMethods(const std::string& port_number,
+                                  const std::string& location) const;
+    bool isDirectoryListingEnabled(const std::string& port_number,
+                                   const std::string& location) const;
+    std::string getErrorPageFromServer(const std::string& path) const;
+    std::vector<std::string> getPortNumbers() const;
 
   private:
     // Private constructor to prevent instantiation
@@ -36,12 +48,22 @@ class Configuration {
     // parsing
     void parseConfigFile(const std::string& filename);
     bool parseBlock(std::ifstream& file, Block& current_block);
-    Block getServerBlockWithName(const std::string& server_name) const;
-    Block getServerBlockWithNameHelper(const std::vector<Block>& blocks,
-                                       const std::string& server_name) const;
-    Block getServerBlockWithPort(const std::string& port_number) const;
+    Block getServerBlockWithPortAndName(const std::string& port_number,
+                                        const std::string& server_name) const;
+
+    // error check
+    bool hasServerBlocks(const std::vector<Block>& blocks) const;
+    bool isValidServerBlockPlacement(const std::vector<Block>& blocks,
+                                     const std::string& upper_block) const;
+    bool isServerHavePort() const;
+    bool checkMethods() const;
+
+    Block getLocationBlockWithPort(const std::string& port_number,
+                                   const std::string& location) const;
     Block getServerBlockWithPortHelper(const std::vector<Block>& blocks,
                                        const std::string& port_number) const;
+    Block getServerBlockWithPort(const std::string& path) const;
+
     std::map<std::string, std::string> simple_directives;
     std::vector<Block> blocks;
 };
@@ -49,5 +71,7 @@ class Configuration {
 std::string trim(const std::string& str);
 bool isValidBlockName(const std::string& name);
 bool isValidDirectiveKey(const std::string& key);
+bool isValidKeyInBlock(const std::string& block_name, const std::string& key);
+bool isValidMethos(const std::string& method);
 int countMatchingPrefixLength(const std::string& location,
                               const std::string& request_location);

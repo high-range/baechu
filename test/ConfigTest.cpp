@@ -9,19 +9,18 @@ int main(int argc, char** argv) {
     Configuration& config = Configuration::getInstance();
     config.initialize(filename);
 
-    std::string path = "localhost:8080/a/b/c";
+    std::string port = "80";
+    std::string serever_name = "localhost";
+    std::string location = "/a/c";
+    std::cout << "root: "
+              << config.getRootDirectory(port, location, serever_name)
+              << std::endl;
 
-    std::string root = config.getRootDirectory(path);
-    std::cout << "using full path: " << root << std::endl;
-
-    std::string server_name = "localhost";
-    std::string port_number = "8080";
-    std::string location = "/a/b/c";
-    root = config.getRootDirectory(server_name, port_number, location);
-    std::cout << "using parameters: " << root << std::endl;
-
-    std::string client_max_body_size = config.getClientMaxBodySize(path);
-    std::cout << client_max_body_size << std::endl;
-
+    std::vector<std::string> ports = config.getPortNumbers();
+    std::cout << "ports: ";
+    for (size_t i = 0; i < ports.size(); i++) {
+        std::cout << ports[i] << ' ';
+    }
+    std::cout << std::endl;
     return 0;
 }
