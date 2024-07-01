@@ -71,6 +71,15 @@ std::string Worker::getFullPath(const std::string& path) {
 ResponseData Worker::handleStaticRequest() {
     Configuration& config = Configuration::getInstance();
 
+    if (config.isLocationHaveRedirect(ip, port, serverName, location)) {
+        std::vector<std::string> redirectionInfo =
+            config.getRedirectionInfo(ip, port, serverName, location);
+        std::string statusCode = redirectionInfo[0];
+        std::string redirectPath = redirectionInfo[1];
+        Headers headers;
+        headers["Location"] = redirectPath;
+        return ResponseData(std::stoi(statusCode), headers);
+    }
     if (!config.isMethodAllowedFor(ip, port, serverName, location, method)) {
         return ResponseData(405);
     }
@@ -176,6 +185,7 @@ ResponseData Worker::doGet() {
 
     struct stat buf;
     if (stat(fullPath.c_str(), &buf) != 0) {
+        std::cout << "File not found, fullPath: " << fullPath << std::endl;
         return ResponseData(404);
     }
 
@@ -187,6 +197,7 @@ ResponseData Worker::doGet() {
             headers["Location"] = path + "/";
             return ResponseData(301, headers);
         }
+        std::cout << "Unexpected file type" << std::endl;
         return ResponseData(404);
     }
 
