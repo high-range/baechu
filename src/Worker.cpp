@@ -362,7 +362,7 @@ CgiEnvMap Worker::createCgiEnvMap() {
     envMap["CONTENT_TYPE"] = request.getHeader()[CONTENT_TYPE_HEADER];
     envMap["GATEWAY_INTERFACE"] = GATEWAY_INTERFACE;
     envMap["PATH_INFO"] = pathInfo;
-    envMap["PATH_TRANSLATED"] = "";  // TODO: rootDir + pathInfo
+    envMap["PATH_TRANSLATED"] = getFullPath(pathInfo);
     envMap["QUERY_STRING"] = request.getQuery();
     envMap["REMOTE_ADDR"] = request.getClientIP();
     envMap["REMOTE_HOST"] = "";
@@ -370,7 +370,7 @@ CgiEnvMap Worker::createCgiEnvMap() {
     envMap["REMOTE_USER"] = "";
     envMap["REQUEST_METHOD"] = method;
     envMap["SCRIPT_NAME"] = scriptName;
-    envMap["SERVER_NAME"] = "";  // TODO: Configuration::Block::name
+    envMap["SERVER_NAME"] = request.getServerIP();
     envMap["SERVER_PORT"] = request.getServerPort();
     envMap["SERVER_PROTOCOL"] = VERSION;
     envMap["SERVER_SOFTWARE"] = SERVER_SOFTWARE;
