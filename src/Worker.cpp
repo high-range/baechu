@@ -378,19 +378,16 @@ CgiEnvMap Worker::createCgiEnvMap() {
 }
 
 ResponseData Worker::handleRequest() {
-    size_t dotPos = path.rfind('.');
-    if (dotPos != std::string::npos) {
-        size_t dirPos = path.find('/', dotPos);
-        if (dirPos == std::string::npos) {
-            dirPos = path.length();
-        }
+    for (std::vector<std::string>::iterator it = _cgiExtensions.begin();
+         it != _cgiExtensions.end(); it++) {
+        size_t extPos = path.find(*it);
+        if (extPos != std::string::npos) {
+            size_t dirPos = path.find('/', extPos);
+            if (dirPos == std::string::npos) {
+                dirPos = path.length();
+            }
 
-        std::string ext = path.substr(dotPos, dirPos - dotPos);
-        ext = lower(ext);
-
-        for (std::vector<std::string>::iterator it = _cgiExtensions.begin();
-             it != _cgiExtensions.end(); it++) {
-            if (ext == *it) {
+            if (path.substr(extPos, dirPos - extPos) == *it) {
                 isStatic = false;
                 pathInfo = path.substr(dirPos);
                 scriptName = path.substr(0, dirPos);
