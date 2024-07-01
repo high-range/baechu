@@ -10,6 +10,7 @@
 #include "RequestData.hpp"
 
 #define BUFFER_SIZE 1024
+#define BACKLOG 128
 #define MAX_EVENTS 10
 
 class Connector {

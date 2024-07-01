@@ -56,7 +56,7 @@ bool Connector::addServer(int port) {
         return false;
     }
 
-    if (listen(serverFd, 10) == -1) {
+    if (listen(serverFd, BACKLOG) == -1) {
         std::cerr << "Failed to listen on socket" << std::endl;
         close(serverFd);
         return false;
