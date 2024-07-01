@@ -70,13 +70,13 @@ bool Connector::addServer(int port) {
         return false;
     }
 
-    struct kevent eventWrite;
-    EV_SET(&eventWrite, serverFd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, NULL);
-    if (kevent(kq, &eventWrite, 1, NULL, 0, NULL) == -1) {
-        std::cerr << "Failed to add write event to kqueue" << std::endl;
-        close(serverFd);
-        return false;
-    }
+    // struct kevent eventWrite;
+    // EV_SET(&eventWrite, serverFd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0,
+    // NULL); if (kevent(kq, &eventWrite, 1, NULL, 0, NULL) == -1) {
+    //     std::cerr << "Failed to add write event to kqueue" << std::endl;
+    //     close(serverFd);
+    //     return false;
+    // }
 
     serverSokets.push_back(serverFd);
     std::cout << "Server started on port " << port << std::endl;
@@ -140,6 +140,15 @@ bool Connector::acceptConnection(int serverFd) {
 }
 
 void Connector::closeConnection(int clientFd) {
+    struct kevent event;
+    EV_SET(&event, clientFd, EVFILT_WRITE, EV_DELETE | EV_DISABLE, 0, 0, NULL);
+    if (kevent(kq, &event, 1, NULL, 0, NULL) == -1) {
+        std::cerr << "Failed to add write event to kqueue" << std::endl;
+    }
+    EV_SET(&event, clientFd, EVFILT_READ, EV_DELETE | EV_DISABLE, 0, 0, NULL);
+    if (kevent(kq, &event, 1, NULL, 0, NULL) == -1) {
+        std::cerr << "Failed to add write event to kqueue" << std::endl;
+    }
     close(clientFd);
     clientAddresses.erase(clientFd);
 }
