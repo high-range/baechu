@@ -262,6 +262,15 @@ ResponseData Worker::doDelete() {
 }
 
 ResponseData Worker::handleDynamicRequest() {
+    struct stat buf;
+    if (stat(fullPath.c_str(), &buf) != 0) {
+        return ResponseData(403);
+    } else if (!S_ISREG(buf.st_mode) && !S_ISLNK(buf.st_mode)) {
+        return ResponseData(403);
+    } else if (access(fullPath.c_str(), X_OK) != 0) {
+        return ResponseData(403);
+    }
+
     std::string response = runCgi();
     std::istringstream ss(response);
 
