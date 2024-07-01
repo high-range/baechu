@@ -173,6 +173,18 @@ bool isValidMethods(const std::string& method) {
     return valid_methods.find(method) != valid_methods.end();
 }
 
+bool isValidFile(const std::string& file) {
+    if (file.length() < 4) {
+        std::cerr << "Error: Invalid file \"" << file << "\"" << std::endl;
+        return false;
+    }
+    if (file.substr(file.length() - 5) != ".conf") {
+        std::cerr << "Error: Invalid file \"" << file << "\"" << std::endl;
+        return false;
+    }
+    return true;
+}
+
 // 앞,뒤 tap,space 없애주는 함수
 std::string trim(const std::string& str) {
     // 문자열 시작에서 첫 번째 공백이나 탭이 아닌 문자의 위치 찾기

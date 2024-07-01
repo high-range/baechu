@@ -15,6 +15,9 @@ Configuration& Configuration::getInstance() {
 
 // Method to initialize the Configuration with a filename
 void Configuration::initialize(const std::string& filename) {
+    if (!isValidFile(filename)) {
+        exit(EXIT_FAILURE);
+    }
     parseConfigFile(filename);
     if (isValidServerBlockPlacement(blocks, "") == false) {
         std::cout << "Error: \"server\" directive is in the wrong location."
@@ -34,6 +37,9 @@ void Configuration::initialize(const std::string& filename) {
         exit(EXIT_FAILURE);
     }
     if (!isDuplicatedHttp()) {
+        exit(EXIT_FAILURE);
+    }
+    if (!isValidRedirect()) {
         exit(EXIT_FAILURE);
     }
 }
@@ -141,7 +147,7 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
             }
             Block block;
             block.name = block_name;
-            // block_name 은 '/'로 끝나야함
+            // location name 은 '/'로 끝나야함
             if (block_name.find("location ") != std::string::npos &&
                 block_name.back() != '/') {
                 std::cerr << "Error: location name should be ended with \'/\'"
@@ -342,6 +348,13 @@ bool Configuration::checkErrorPage() const {
                                     return false;
                                 }
                             }
+                            if (errors[i].size() != 3 ||
+                                !(errors[i][0] >= '3' && errors[i][0] <= '5')) {
+                                std::cerr << "Error: statusCode must be "
+                                             "between 300 and 599"
+                                          << std::endl;
+                                return false;
+                            }
                         }
                         if (errors[errors.size() - 1][0] != '/') {
                             std::cerr << "Error: Invalid path \""
@@ -485,9 +498,7 @@ bool Configuration::isDuplicatedHttp() const {
     return true;
 }
 
-// -------------------------- 정보 가져오는 함수 ------------------------------
-std::vector<std::string> Configuration::getPortNumbers() const {
-    std::vector<std::string> ports;
+bool Configuration::isValidRedirect() const {
     for (std::vector<Block>::const_iterator block_it = blocks.begin();
          block_it != blocks.end(); ++block_it) {
         if (block_it->name == "http") {
@@ -495,7 +506,73 @@ std::vector<std::string> Configuration::getPortNumbers() const {
                      block_it->sub_blocks.begin();
                  sub_it != block_it->sub_blocks.end(); ++sub_it) {
                 if (sub_it->name == "server") {
-                    std::string port_number = sub_it->directives.at("listen");
+                    for (std::vector<Block>::const_iterator it =
+                             sub_it->sub_blocks.begin();
+                         it != sub_it->sub_blocks.end(); ++it) {
+                        if (it->name.find("location") != std::string::npos) {
+                            if (it->directives.find("return") !=
+                                it->directives.end()) {
+                                std::string value = it->directives.at("return");
+                                size_t separator_pos = value.find(' ');
+                                if (separator_pos == std::string::npos) {
+                                    std::cerr << "Error: Invalid \"return\" "
+                                                 "format: \""
+                                              << value << "\"" << std::endl;
+                                    return false;
+                                }
+                                std::string status_code =
+                                    value.substr(0, separator_pos);
+                                // TODO: valid status code check
+                                std::string path =
+                                    value.substr(separator_pos + 1);
+                                if (path.empty()) {
+                                    std::cerr << "Error: Invalid \"return\" "
+                                                 "format: \""
+                                              << path << "\"" << std::endl;
+                                    return false;
+                                }
+                                for (size_t i = 0; i < status_code.length();
+                                     i++) {
+                                    if (!std::isdigit(status_code[i])) {
+                                        std::cerr << "Error: Invalid "
+                                                     "\"return\" format: \""
+                                                  << status_code << "\""
+                                                  << std::endl;
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
+// -------------------------- 정보 가져오는 함수 ------------------------------
+std::vector<std::string> Configuration::getPortNumbers() const {
+    std::vector<std::string> ports;
+    std::string port_number;
+
+    for (std::vector<Block>::const_iterator block_it = blocks.begin();
+         block_it != blocks.end(); ++block_it) {
+        if (block_it->name == "http") {
+            for (std::vector<Block>::const_iterator sub_it =
+                     block_it->sub_blocks.begin();
+                 sub_it != block_it->sub_blocks.end(); ++sub_it) {
+                if (sub_it->name == "server") {
+                    std::string port = sub_it->directives.at("listen");
+                    size_t colon_pos = port.find(':');
+                    size_t dot_pos = port.find('.');
+                    if (colon_pos != std::string::npos) {
+                        port_number = port.substr(colon_pos + 1);
+                    } else if (dot_pos != std::string::npos) {
+                        port_number = "80";
+                    } else {
+                        port_number = port;
+                    }
                     ports.push_back(port_number);
                 }
             }
@@ -615,14 +692,15 @@ Block Configuration::getLongestMatchingLocation(
                 if (location_prefix == "/") {
                     longest_matching_location = *block_it;
                 }
-            }
-            // 먼저 prefix가 일치하는지 체크
-            if (request_location.compare(0, location_prefix.length(),
-                                         location_prefix) == 0) {
-                // 일치한다면, longest matching인지 체크
-                if (location_prefix.length() > longest_match_length) {
-                    longest_match_length = location_prefix.length();
-                    longest_matching_location = *block_it;
+            } else {
+                // 먼저 prefix가 일치하는지 체크
+                if (request_location.compare(0, location_prefix.length(),
+                                             location_prefix) == 0) {
+                    // 일치한다면, longest matching인지 체크
+                    if (location_prefix.length() > longest_match_length) {
+                        longest_match_length = location_prefix.length();
+                        longest_matching_location = *block_it;
+                    }
                 }
             }
         }
@@ -834,4 +912,37 @@ std::string Configuration::getCgiPath(const std::string& ip,
         path = "";
     }
     return path;
+}
+
+bool Configuration::isLocationHaveRedirect(const std::string& ip,
+                                           const std::string& port,
+                                           const std::string& server_name,
+                                           const std::string& location) const {
+    Block server = getServerBlockWithPortAndName(ip, port, server_name);
+    Block location_block = getLongestMatchingLocation(server, location);
+
+    return location_block.directives.find("return") !=
+           location_block.directives.end();
+}
+
+std::vector<std::string> Configuration::getRedirectionInfo(
+    const std::string& ip, const std::string& port,
+    const std::string& server_name, const std::string& location) const {
+    std::vector<std::string> redirection;
+    Block server = getServerBlockWithPortAndName(ip, port, server_name);
+    Block location_block = getLongestMatchingLocation(server, location);
+
+    if (location_block.directives.find("return") !=
+        location_block.directives.end()) {
+        std::string value = location_block.directives.at("return");
+        size_t separator_pos = value.find(' ');
+
+        std::string status_code = value.substr(0, separator_pos);
+        redirection.push_back(status_code);
+
+        std::string path = value.substr(separator_pos + 1);
+        redirection.push_back(path);
+    }
+
+    return redirection;
 }

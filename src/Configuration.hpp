@@ -52,6 +52,12 @@ class Configuration {
     std::string getCgiPath(const std::string& ip, const std::string& port,
                            const std::string& server_name,
                            const std::string& extension) const;
+    bool isLocationHaveRedirect(const std::string& ip, const std::string& port,
+                                const std::string& server_name,
+                                const std::string& location) const;
+    std::vector<std::string> getRedirectionInfo(
+        const std::string& ip, const std::string& port,
+        const std::string& server_name, const std::string& location) const;
 
   private:
     // Private constructor to prevent instantiation
@@ -75,6 +81,7 @@ class Configuration {
     bool isValidListen(const std::string& listen_value) const;
     bool isValidCgiPath() const;
     bool isDuplicatedHttp() const;
+    bool isValidRedirect() const;
 
     Block getLongestMatchingLocation(const Block& server,
                                      const std::string& request_location) const;
@@ -84,6 +91,7 @@ class Configuration {
 };
 
 std::string trim(const std::string& str);
+bool isValidFile(const std::string& file);
 bool isValidBlockName(const std::string& name);
 bool isValidDirectiveKey(const std::string& key);
 bool isValidKeyInBlock(const std::string& block_name, const std::string& key);
