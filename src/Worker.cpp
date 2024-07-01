@@ -183,7 +183,9 @@ ResponseData Worker::doGet() {
         if (S_ISREG(buf.st_mode) || S_ISLNK(buf.st_mode)) {
             return doGetFile();
         } else if (S_ISDIR(buf.st_mode)) {
-            return ResponseData(301);
+            Headers headers;
+            headers["Location"] = path + "/";
+            return ResponseData(301, headers);
         }
         return ResponseData(404);
     }
@@ -213,6 +215,11 @@ ResponseData Worker::doPut() {
             return ResponseData(405);
         }
         if (S_ISREG(buf.st_mode)) {
+            // 디렉토리의 write 권한 확인 (파일 수정 권한 확인)
+            std::string dirPath = fullPath.substr(0, fullPath.rfind('/'));
+            if (access(dirPath.c_str(), W_OK) != 0) {
+                return ResponseData(403);
+            }
             // modify the file
             std::ofstream file(fullPath, std::ios::trunc);
             if (file.is_open()) {
@@ -233,14 +240,25 @@ ResponseData Worker::doPut() {
 }
 
 ResponseData Worker::doDelete() {
-    struct stat buffer;
-    if (stat(fullPath.c_str(), &buffer) == 0) {
-        if (remove(fullPath.c_str()) == 0) {
-            return ResponseData(204);  // Return 204 No Content if successful
+    struct stat buf;
+    if (stat(fullPath.c_str(), &buf) == 0) {
+        if (S_ISDIR(buf.st_mode)) {
+            return ResponseData(405);
+        } else if (S_ISREG(buf.st_mode) || S_ISLNK(buf.st_mode)) {
+            // 디렉토리의 write 권한 확인 (파일 삭제 권한 확인)
+            std::string dirPath = fullPath.substr(0, fullPath.rfind('/'));
+            if (access(dirPath.c_str(), W_OK) != 0) {
+                return ResponseData(403);
+            }
+            // delete the file
+            if (std::remove(fullPath.c_str()) == 0) {
+                return ResponseData(200);
+            }
+            return ResponseData(500);
         }
-        return ResponseData(500);
+        return ResponseData(404);
     }
-    return ResponseData(404);
+    return ResponseData(500);
 }
 
 ResponseData Worker::handleDynamicRequest() {
