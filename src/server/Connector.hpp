@@ -22,7 +22,7 @@ class Connector {
 
   private:
     int kq;
-    std::vector<int> serverSokets;
+    std::vector<int> serverSockets;
     std::map<int, sockaddr_in> clientAddresses;
     std::vector<struct kevent> changes;
 

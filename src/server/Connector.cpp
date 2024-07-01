@@ -20,7 +20,7 @@ Connector::Connector() {
 
 Connector::~Connector() {
     std::vector<int>::iterator it;
-    for (it = serverSokets.begin(); it != serverSokets.end(); it++) {
+    for (it = serverSockets.begin(); it != serverSockets.end(); it++) {
         close(*it);
     }
     close(kq);
@@ -70,12 +70,17 @@ bool Connector::addServer(int port) {
         return false;
     }
 
-    serverSokets.push_back(serverFd);
+    serverSockets.push_back(serverFd);
     std::cout << "Server started on port " << port << std::endl;
     return true;
 }
 
 void Connector::start() {
+    if (serverSockets.empty()) {
+        std::cerr << "No servers have been added." << std::endl;
+        return;
+    }
+
     while (true) {
         struct kevent events[MAX_EVENTS];
         int nevents = kevent(kq, NULL, 0, events, MAX_EVENTS, NULL);
