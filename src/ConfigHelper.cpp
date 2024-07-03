@@ -7,14 +7,13 @@ const std::set<std::string> createValidBlockNames() {
     s.insert("http");
     s.insert("server");
     s.insert("location");
+    s.insert("cgi");
     s.insert("events");
     return s;
 }
 
 const std::set<std::string> createValidDirectiveKeys() {
     std::set<std::string> s;
-    s.insert("allow");
-    s.insert("deny");
     s.insert("error_page");  // syntax check O
     s.insert("listen");      // syntax check O
     s.insert("root");        // syntax check O
@@ -23,16 +22,10 @@ const std::set<std::string> createValidDirectiveKeys() {
     s.insert("client_max_body_size");  // syntax check O
     s.insert("default_type");
     s.insert("server_name");
-    s.insert("worker_processes");
-    s.insert("user");
-    s.insert("worker_connections");
     s.insert("charset");
     s.insert("include");
     s.insert("sendfile");
-    s.insert("rewrite");
-    s.insert("return");
-    s.insert("keepalive_timeout");
-    s.insert("cgi");
+    s.insert("return");  // syntax check O
     s.insert("autoindex");
     return s;
 }
@@ -40,9 +33,6 @@ const std::set<std::string> createValidDirectiveKeys() {
 const std::set<std::string> createValidMainDirectives() {
     std::set<std::string> s;
     s.insert("env");
-    s.insert("error_log");
-    s.insert("pid");
-    s.insert("worker_processes");
     s.insert("http");
     s.insert("events");
     s.insert("user");
@@ -51,8 +41,6 @@ const std::set<std::string> createValidMainDirectives() {
 
 const std::set<std::string> createValidHttpDirectives() {
     std::set<std::string> s;
-    s.insert("error_log");
-    s.insert("client_body_buffer_size");
     s.insert("client_max_body_size");
     s.insert("default_type");
     s.insert("error_page");
@@ -60,42 +48,37 @@ const std::set<std::string> createValidHttpDirectives() {
     s.insert("root");
     s.insert("type");
     s.insert("include");
-    s.insert("sendfile");
-    s.insert("keepalive_timeout");
-    s.insert("sendfile");
     return s;
 }
 
 const std::set<std::string> createValidServerDirectives() {
     std::set<std::string> s;
-    s.insert("client_body_buffer_size");
     s.insert("client_max_body_size");
     s.insert("default_type");
     s.insert("error_page");
-    s.insert("location");
     s.insert("root");
     s.insert("server_name");
     s.insert("type");
     s.insert("listen");
-    s.insert("error_log");
     s.insert("cgi");
     return s;
 }
 
 const std::set<std::string> createValidLocationDirectives() {
     std::set<std::string> s;
-    s.insert("error_log");
-    s.insert("client_body_buffer_size");
     s.insert("client_max_body_size");
-    s.insert("default_type");
-    s.insert("error_page");
     s.insert("root");
-    s.insert("alias");
     s.insert("type");
     s.insert("index");
     s.insert("limit_except");
     s.insert("return");
     s.insert("autoindex");
+    return s;
+}
+
+const std::set<std::string> createValidCgiDirectives() {
+    std::set<std::string> s;
+    s.insert("root");
     return s;
 }
 
@@ -122,6 +105,7 @@ const std::set<std::string> valid_server_directives =
     createValidServerDirectives();
 const std::set<std::string> valid_location_directives =
     createValidLocationDirectives();
+const std::set<std::string> valid_cgi_directives = createValidCgiDirectives();
 const std::set<std::string> valid_events_directives =
     createValidEventsDirectives();
 const std::set<std::string> valid_methods = createValidMethods();
@@ -133,9 +117,21 @@ bool isValidLocationBlockName(const std::string& name) {
     return !path.empty();
 }
 
+bool isValidCgiName(const std::string& name) {
+    std::string extension = name.substr(3);
+    return !extension.empty();
+}
+
 bool isValidBlockName(const std::string& name) {
-    if (name.find("location") == 0) {
-        return isValidLocationBlockName(name);
+    if (name.length() >= 8) {
+        if (name.substr(0, 8) == "location") {
+            return isValidLocationBlockName(name);
+        }
+    }
+    if (name.length() >= 3) {
+        if (name.substr(0, 3) == "cgi") {
+            return isValidCgiName(name);
+        }
     }
     return valid_block_names.find(name) != valid_block_names.end();
 }
@@ -155,12 +151,18 @@ bool isValidKeyInBlock(const std::string& block_name, const std::string& key) {
         if (key.substr(0, 9) == "location ") {
             return true;
         }
+        if (key.substr(0, 4) == "cgi ") {
+            return true;
+        }
         return valid_server_directives.find(key) !=
                valid_server_directives.end();
     }
     if (block_name.substr(0, 9) == "location ") {
         return valid_location_directives.find(key) !=
                valid_location_directives.end();
+    }
+    if (block_name.substr(0, 4) == "cgi ") {
+        return valid_cgi_directives.find(key) != valid_cgi_directives.end();
     }
     if (block_name == "events") {
         return valid_events_directives.find(key) !=
@@ -174,7 +176,7 @@ bool isValidMethods(const std::string& method) {
 }
 
 bool isValidFile(const std::string& file) {
-    if (file.length() < 4) {
+    if (file.length() < 5) {
         std::cerr << "Error: Invalid file \"" << file << "\"" << std::endl;
         return false;
     }

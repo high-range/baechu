@@ -49,6 +49,9 @@ class Configuration {
                                           const std::string& port,
                                           const std::string& server_name,
                                           const std::string& location) const;
+    std::vector<std::string> getCgiExtensions(
+        const std::string& ip, const std::string& port,
+        const std::string& server_name) const;
     std::string getCgiPath(const std::string& ip, const std::string& port,
                            const std::string& server_name,
                            const std::string& extension) const;

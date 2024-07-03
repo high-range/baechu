@@ -43,6 +43,14 @@ int main(int argc, char** argv) {
     }
     std::cout << std::endl;
 
+    std::vector<std::string> extensions =
+        config.getCgiExtensions(ip, port, server_name);
+    std::cout << "cgi extensions: ";
+    for (size_t i = 0; i < extensions.size(); i++) {
+        std::cout << extensions[i] << ' ';
+    }
+    std::cout << std::endl;
+
     std::cout << "cgi path: " << config.getCgiPath(ip, port, server_name, ".py")
               << std::endl;
 
