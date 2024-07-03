@@ -15,18 +15,6 @@
 #include "RequestData.hpp"
 #include "Response.hpp"
 
-// FOR DEVELOPMENT
-
-static std::vector<std::string> _getCgiExtensions() {
-    std::vector<std::string> cgiExtensions;
-    cgiExtensions.push_back(".py");
-    cgiExtensions.push_back(".pl");
-    return cgiExtensions;
-}
-static std::vector<std::string> _cgiExtensions = _getCgiExtensions();
-
-// END FOR DEVELOPMENT
-
 static std::string lower(std::string s) {
     for (size_t i = 0; i < s.length(); i++) {
         if (isupper(s[i])) {
@@ -63,8 +51,14 @@ Worker::Worker(const RequestData& request) : request(request) {
 
 std::string Worker::getFullPath(const std::string& path) {
     Configuration& config = Configuration::getInstance();
-
     std::string root = config.getRootDirectory(ip, port, serverName, location);
+    if (root.back() == '/') {
+        root.pop_back();
+    }
+
+    // std::cout << "root: " << root << std::endl;
+    // std::cout << "path: " << path << std::endl;
+    // std::cout << "fullPath: " << root + path << std::endl;
     return root + path;
 }
 
@@ -389,6 +383,7 @@ CgiEnvMap Worker::createCgiEnvMap() {
 }
 
 ResponseData Worker::handleRequest() {
+    Configuration& config = Configuration::getInstance();
     size_t dotPos = path.rfind('.');
     if (dotPos != std::string::npos) {
         size_t dirPos = path.find('/', dotPos);
@@ -399,8 +394,10 @@ ResponseData Worker::handleRequest() {
         std::string ext = path.substr(dotPos, dirPos - dotPos);
         ext = lower(ext);
 
-        for (std::vector<std::string>::iterator it = _cgiExtensions.begin();
-             it != _cgiExtensions.end(); it++) {
+        std::vector<std::string> cgiExtensions =
+            config.getCgiExtensions(ip, port, serverName);
+        for (std::vector<std::string>::iterator it = cgiExtensions.begin();
+             it != cgiExtensions.end(); it++) {
             if (ext == *it) {
                 isStatic = false;
                 pathInfo = path.substr(dirPos);

@@ -50,11 +50,7 @@ class Worker {
     ResponseData doGetFile();
     ResponseData doGetDirectory();
     ResponseData doGet();
-
-    ResponseData doPost();
-
     ResponseData doPut();
-
     ResponseData doDelete();
 
     std::string getFullPath(const std::string& path);

@@ -92,6 +92,7 @@ const std::set<std::string> createValidEventsDirectives() {
 const std::set<std::string> createValidMethods() {
     std::set<std::string> s;
     s.insert("GET");
+    s.insert("PUT");
     s.insert("POST");
     s.insert("DELETE");
     return s;
