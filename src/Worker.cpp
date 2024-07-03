@@ -262,6 +262,15 @@ ResponseData Worker::doDelete() {
 }
 
 ResponseData Worker::handleDynamicRequest() {
+    struct stat buf;
+    if (stat(fullPath.c_str(), &buf) != 0) {
+        return ResponseData(403);
+    } else if (!S_ISREG(buf.st_mode) && !S_ISLNK(buf.st_mode)) {
+        return ResponseData(403);
+    } else if (access(fullPath.c_str(), X_OK) != 0) {
+        return ResponseData(403);
+    }
+
     std::string response = runCgi();
     std::istringstream ss(response);
 
@@ -362,7 +371,7 @@ CgiEnvMap Worker::createCgiEnvMap() {
     envMap["CONTENT_TYPE"] = request.getHeader()[CONTENT_TYPE_HEADER];
     envMap["GATEWAY_INTERFACE"] = GATEWAY_INTERFACE;
     envMap["PATH_INFO"] = pathInfo;
-    envMap["PATH_TRANSLATED"] = "";  // TODO: rootDir + pathInfo
+    envMap["PATH_TRANSLATED"] = getFullPath(pathInfo);
     envMap["QUERY_STRING"] = request.getQuery();
     envMap["REMOTE_ADDR"] = request.getClientIP();
     envMap["REMOTE_HOST"] = "";
@@ -370,7 +379,7 @@ CgiEnvMap Worker::createCgiEnvMap() {
     envMap["REMOTE_USER"] = "";
     envMap["REQUEST_METHOD"] = method;
     envMap["SCRIPT_NAME"] = scriptName;
-    envMap["SERVER_NAME"] = "";  // TODO: Configuration::Block::name
+    envMap["SERVER_NAME"] = request.getServerIP();
     envMap["SERVER_PORT"] = request.getServerPort();
     envMap["SERVER_PROTOCOL"] = VERSION;
     envMap["SERVER_SOFTWARE"] = SERVER_SOFTWARE;
@@ -378,19 +387,16 @@ CgiEnvMap Worker::createCgiEnvMap() {
 }
 
 ResponseData Worker::handleRequest() {
-    size_t dotPos = path.rfind('.');
-    if (dotPos != std::string::npos) {
-        size_t dirPos = path.find('/', dotPos);
-        if (dirPos == std::string::npos) {
-            dirPos = path.length();
-        }
+    for (std::vector<std::string>::iterator it = _cgiExtensions.begin();
+         it != _cgiExtensions.end(); it++) {
+        size_t extPos = path.find(*it);
+        if (extPos != std::string::npos) {
+            size_t dirPos = path.find('/', extPos);
+            if (dirPos == std::string::npos) {
+                dirPos = path.length();
+            }
 
-        std::string ext = path.substr(dotPos, dirPos - dotPos);
-        ext = lower(ext);
-
-        for (std::vector<std::string>::iterator it = _cgiExtensions.begin();
-             it != _cgiExtensions.end(); it++) {
-            if (ext == *it) {
+            if (path.substr(extPos, dirPos - extPos) == *it) {
                 isStatic = false;
                 pathInfo = path.substr(dirPos);
                 scriptName = path.substr(0, dirPos);
