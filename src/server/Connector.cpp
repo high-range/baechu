@@ -147,6 +147,7 @@ void Connector::closeConnection(int clientFd) {
 void Connector::handleRequest(int clientFd) {
     std::string request;
     char buffer[BUFFER_SIZE];
+    usleep(1000);
 
     while (true) {
         int bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
