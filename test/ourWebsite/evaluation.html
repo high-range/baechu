@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Webserv Evaluation Page">
+    <meta name="keywords" content="Webserv, Evaluation, HTTP server, C++">
+    <title>Webserv Evaluation Page</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <h1>Webserv Evaluation Page</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="features.html">Features</a></li>
+                <li><a href="setup.html">Setup</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section>
+            <h2>Introduction</h2>
+            <p>This page is designed to test various features of the Webserv HTTP server.</p>
+        </section>
+        <section>
+            <h2>Mandatory Part</h2>
+            <h3>Configuration Tests</h3>
+            <ul>
+                <li>Setup multiple servers with different ports: <a href="http://localhost:8080">Port 8080</a>, <a href="http://localhost:8081">Port 8081</a></li>
+                <li>Setup default error page (try to access a non-existing page): <a href="/non-existing-page">404 Error Page</a></li>
+                <li>Limit the client body (try to upload a large file)</li>
+                <li>Setup routes in a server to different directories</li>
+                <li>Setup a default file to search for if you ask for a directory: <a href="/directory">Directory</a></li>
+                <li>Setup a list of methods accepted for a certain route</li>
+            </ul>
+        </section>
+        <section>
+            <h3>Basic Checks</h3>
+            <ul>
+                <li>GET request: <a href="about.html">About Page</a></li>
+                <li>POST request:</li>
+                <form action="/submit_contact_form" method="post">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" required>
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                    <label for="message">Message:</label>
+                    <textarea id="message" name="message" required></textarea>
+                    <button type="submit">Send</button>
+                </form>
+                <li>DELETE request (use a tool like Postman or curl to send a DELETE request)</li>
+                <li>UNKNOWN request (use a tool like Postman or curl to send an unsupported request)</li>
+                <li>Upload and retrieve a file (use a file upload form and then download the file)</li>
+            </ul>
+        </section>
+        <section>
+            <h3>CGI Tests</h3>
+            <ul>
+                <li>Execute CGI script: <a href="/cgi-bin/footer.sh">footer.sh</a></li>
+                <li>Test CGI with GET method: <a href="/cgi-bin/test_get.py">test_get.py</a></li>
+                <li>Test CGI with POST method:</li>
+                <form action="/goinfre/sihlee/baechu/test/cgi-bin/submit_contact_form.py" method="post">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" required>
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                    <label for="message">Message:</label>
+                    <textarea id="message" name="message" required></textarea>
+                    <button type="submit">Send</button>
+                </form>                
+                <li>Test CGI error handling with an erroneous script</li>
+            </ul>
+        </section>
+        <section>
+            <h3>Browser Tests</h3>
+            <ul>
+                <li>Test with a browser and check request/response headers</li>
+                <li>Test wrong URL: <a href="/wrong-url">Wrong URL</a></li>
+                <li>List a directory: <a href="/cgi-bin/">Directory Listing</a></li>
+                <li>Test URL redirection: <a href="/bb/">Redirect</a></li>
+            </ul>
+        </section>
+        <section>
+            <h3>Port Issues</h3>
+            <ul>
+                <li>Test multiple ports and websites: <a href="http://localhost:8082">Port 8082</a>, <a href="http://localhost:8083">Port 8083</a></li>
+                <li>Test same port multiple times (check configuration file)</li>
+                <li>Launch multiple servers with common ports</li>
+            </ul>
+        </section>
+        <section>
+            <h3>Siege & Stress Test</h3>
+            <ul>
+                <li>Run stress tests using Siege (ensure availability above 99.5%)</li>
+                <li>Check for memory leaks</li>
+                <li>Ensure no hanging connections</li>
+                <li>Continuous operation without server restart</li>
+            </ul>
+        </section>
+        <section>
+            <h2>Bonus Part</h2>
+            <ul>
+                <li>Working session and cookies system</li>
+                <li>More than one CGI system</li>
+            </ul>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2024 Webserv Team | <a href="privacy.html">Privacy Policy</a></p>
+    </footer>
+</body>
+</html>

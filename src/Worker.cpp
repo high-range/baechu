@@ -81,7 +81,7 @@ ResponseData Worker::handleStaticRequest() {
     if (method == GET) {
         return doGet();
     } else if (method == POST) {
-        return ResponseData(405);
+        return handleDynamicRequest();
     } else if (method == PUT) {
         return doPut();
     } else if (method == DELETE) {
@@ -321,6 +321,14 @@ ResponseData Worker::handleDynamicRequest() {
         .withReasonPhrase(reasonPhrase);
 }
 
+char** makeArgs(std::string scriptPath) {
+    char** args = new char*[2];  // 배열 크기를 2로 설정 (스크립트 경로와 NULL)
+    args[0] = new char[scriptPath.size() + 1];
+    std::strcpy(args[0], scriptPath.c_str());
+    args[1] = NULL;
+    return args;
+}
+
 char** makeEnvp(CgiEnvMap& envMap) {
     char** envp = new char*[envMap.size() + 1];
 
@@ -338,10 +346,18 @@ char** makeEnvp(CgiEnvMap& envMap) {
 
 std::string Worker::runCgi() {
     int fds[2];
-    pipe(fds);
+    if (pipe(fds) == -1) {
+        perror("pipe");
+        return "Internal Server Error";
+    }
 
     pid_t pid = fork();
-    if (pid == 0) {
+    if (pid == -1) {
+        perror("fork");
+        return "Internal Server Error";
+    }
+
+    if (pid == 0) { // child process
         close(fds[0]);
 
         dup2(fds[1], STDOUT_FILENO);
@@ -349,8 +365,9 @@ std::string Worker::runCgi() {
 
         CgiEnvMap envMap = createCgiEnvMap();
         char** envp = makeEnvp(envMap);
+        char** args = makeArgs(fullPath);
 
-        execve(fullPath.c_str(), NULL, envp);
+        execve(fullPath.c_str(), args, envp);
 
         exit(EXIT_FAILURE);
     }
@@ -408,6 +425,7 @@ ResponseData Worker::handleRequest() {
         for (std::vector<std::string>::iterator it = cgiExtensions.begin();
              it != cgiExtensions.end(); it++) {
             if (ext == *it) {
+                std::cout << "CGI request" << std::endl;
                 isStatic = false;
                 pathInfo = path.substr(dirPos);
                 scriptName = path.substr(0, dirPos);
