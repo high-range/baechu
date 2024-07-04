@@ -269,10 +269,13 @@ ResponseData Worker::doDelete() {
 ResponseData Worker::handleDynamicRequest() {
     struct stat buf;
     if (stat(fullPath.c_str(), &buf) != 0) {
+        std::cerr << "File not found" << std::endl;
         return ResponseData(403);
     } else if (!S_ISREG(buf.st_mode) && !S_ISLNK(buf.st_mode)) {
+        std::cerr << "Not a regular file" << std::endl;
         return ResponseData(403);
     } else if (access(fullPath.c_str(), X_OK) != 0) {
+        std::cerr << "No permission to execute" << std::endl;
         return ResponseData(403);
     }
 
@@ -357,7 +360,7 @@ std::string Worker::runCgi() {
         return "Internal Server Error";
     }
 
-    if (pid == 0) { // child process
+    if (pid == 0) {  // child process
         close(fds[0]);
 
         dup2(fds[1], STDOUT_FILENO);
@@ -427,9 +430,12 @@ ResponseData Worker::handleRequest() {
             if (ext == *it) {
                 std::cout << "CGI request" << std::endl;
                 isStatic = false;
-                pathInfo = path.substr(dirPos);
-                scriptName = path.substr(0, dirPos);
-                fullPath = getFullPath(scriptName);
+                pathInfo = config.getCgiPath(ip, port, serverName, ext);
+                if (pathInfo.back() != '/') {
+                    pathInfo += '/';
+                }
+                scriptName = path.substr(path.rfind('/') + 1);
+                fullPath = pathInfo + scriptName;
                 break;
             }
         }
