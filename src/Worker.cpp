@@ -56,9 +56,9 @@ std::string Worker::getFullPath(const std::string& path) {
         root.pop_back();
     }
 
-    // std::cout << "root: " << root << std::endl;
-    // std::cout << "path: " << path << std::endl;
-    // std::cout << "fullPath: " << root + path << std::endl;
+    std::cout << "root: " << root << std::endl;
+    std::cout << "path: " << path << std::endl;
+    std::cout << "fullPath: " << root + path << std::endl;
     return root + path;
 }
 
@@ -267,6 +267,15 @@ ResponseData Worker::doDelete() {
 }
 
 ResponseData Worker::handleDynamicRequest() {
+    struct stat buf;
+    if (stat(fullPath.c_str(), &buf) != 0) {
+        return ResponseData(403);
+    } else if (!S_ISREG(buf.st_mode) && !S_ISLNK(buf.st_mode)) {
+        return ResponseData(403);
+    } else if (access(fullPath.c_str(), X_OK) != 0) {
+        return ResponseData(403);
+    }
+
     std::string response = runCgi();
     std::istringstream ss(response);
 
@@ -367,7 +376,7 @@ CgiEnvMap Worker::createCgiEnvMap() {
     envMap["CONTENT_TYPE"] = request.getHeader()[CONTENT_TYPE_HEADER];
     envMap["GATEWAY_INTERFACE"] = GATEWAY_INTERFACE;
     envMap["PATH_INFO"] = pathInfo;
-    envMap["PATH_TRANSLATED"] = "";  // TODO: rootDir + pathInfo
+    envMap["PATH_TRANSLATED"] = getFullPath(pathInfo);
     envMap["QUERY_STRING"] = request.getQuery();
     envMap["REMOTE_ADDR"] = request.getClientIP();
     envMap["REMOTE_HOST"] = "";
@@ -375,7 +384,7 @@ CgiEnvMap Worker::createCgiEnvMap() {
     envMap["REMOTE_USER"] = "";
     envMap["REQUEST_METHOD"] = method;
     envMap["SCRIPT_NAME"] = scriptName;
-    envMap["SERVER_NAME"] = "";  // TODO: Configuration::Block::name
+    envMap["SERVER_NAME"] = request.getServerIP();
     envMap["SERVER_PORT"] = request.getServerPort();
     envMap["SERVER_PROTOCOL"] = VERSION;
     envMap["SERVER_SOFTWARE"] = SERVER_SOFTWARE;
