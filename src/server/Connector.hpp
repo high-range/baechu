@@ -30,9 +30,9 @@ class Connector {
     std::map<int, size_t> responseOffsets;
 
     void handleEvent(struct kevent& event);
-    bool acceptConnection(int serverFd);
+    bool acceptConnection(struct kevent& event);
     void closeConnection(int client_fd);
-    void handleRead(int client_fd);
-    void handleWrite(int client_fd);
+    void handleRead(struct kevent& event);
+    void handleWrite(struct kevent& event);
     void setNonBlocking(int fd);
 };

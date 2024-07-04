@@ -8,10 +8,10 @@
 #include "Response.hpp"
 #include "Worker.hpp"
 
-void makeLog(std::string requestMessage) {
+void makeLog(std::string message, std::string type) {
     std::ofstream logFile;
     logFile.open("log.txt", std::ios::app);
-    logFile << requestMessage << std::endl;
+    logFile << type << message << std::endl;
     logFile.close();
 }
 
@@ -44,21 +44,19 @@ std::string Manager::run(std::string requestMessage, RequestData requestData) {
             throw ResponseData(400);
         }
 
-        makeLog(requestMessage);
-
-        // std::cout << "Request message logged" << std::endl;
+        makeLog(requestMessage, "[Request]\n\n"); // TODO: Remove this line
 
         Request::parseMessage(requestMessage, requestData);
-
-        // std::cout << "Request parsed" << std::endl;
-        // showRequestData(requestData);
 
         Worker worker = Worker(requestData);
         ResponseData responseData = worker.handleRequest();
         responseData = worker.redirectOrUse(responseData);
+
+        makeLog(Response::messageGenerate(responseData), "[Response]\n\n"); // TODO: Remove this line
         return (Response::messageGenerate(responseData));
     } catch (ResponseData& responseData) {
         responseData = Worker(requestData).redirectOrUse(responseData);
+        makeLog(Response::messageGenerate(responseData), "[Response]\n\n"); // TODO: Remove this line
         return (Response::messageGenerate(responseData));
     }
 }
