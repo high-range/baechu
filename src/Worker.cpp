@@ -63,8 +63,14 @@ Worker::Worker(const RequestData& request) : request(request) {
 
 std::string Worker::getFullPath(const std::string& path) {
     Configuration& config = Configuration::getInstance();
-
     std::string root = config.getRootDirectory(ip, port, serverName, location);
+    if (root.back() == '/') {
+        root.pop_back();
+    }
+
+    std::cout << "root: " << root << std::endl;
+    std::cout << "path: " << path << std::endl;
+    std::cout << "fullPath: " << root + path << std::endl;
     return root + path;
 }
 
