@@ -205,15 +205,26 @@ std::string trim(const std::string& str) {
                       not_space_or_tab_last - not_space_or_tab_first + 1);
 }
 
-int countMatchingPrefixLength(const std::string& location,
-                              const std::string& request_location) {
-    int count = 0;
-    size_t i = 0;
-    for (i = 0; i < location.length() && i < request_location.length(); i++) {
-        if (location[i] != request_location[i]) {
-            break;
-        }
-        count++;
-    }
-    return count;
+#include <sstream>
+
+int stringToInteger(const std::string& str) {
+    std::stringstream ss(str);
+    int num;
+
+    ss >> num;
+    return num;
+    // size_t i = 0;
+    // int result = 0;
+
+    // // Skip not a digit
+    // while (i < str.size() && !std::isdigit(str[i])) {
+    //     i++;
+    // }
+
+    // // Convert characters to integer
+    // for (; i < str.size(); i++) {
+    //     result = result * 10 + (str[i] - '0');
+    // }
+
+    // return result;
 }

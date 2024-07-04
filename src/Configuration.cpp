@@ -563,8 +563,8 @@ bool Configuration::isValidRedirect() const {
 }
 
 // -------------------------- 정보 가져오는 함수 ------------------------------
-std::vector<std::string> Configuration::getPortNumbers() const {
-    std::vector<std::string> ports;
+std::vector<int> Configuration::getPortNumbers() const {
+    std::vector<int> ports;
     std::string port_number;
 
     for (std::vector<Block>::const_iterator block_it = blocks.begin();
@@ -584,7 +584,7 @@ std::vector<std::string> Configuration::getPortNumbers() const {
                     } else {
                         port_number = port;
                     }
-                    ports.push_back(port_number);
+                    ports.push_back(stringToInteger(port_number));
                 }
             }
         }
@@ -778,7 +778,7 @@ std::string Configuration::getClientMaxBodySize(
     return "1M";
 }
 
-std::string Configuration::getDefaultPort() const {
+int Configuration::getDefaultPort() const {
     for (std::vector<Block>::const_iterator block_it = blocks.begin();
          block_it != blocks.end(); ++block_it) {
         if (block_it->name == "http") {
@@ -790,17 +790,18 @@ std::string Configuration::getDefaultPort() const {
                     if (listen.find('.') != std::string::npos &&
                         listen.find(':') != std::string::npos) {
                         size_t colon_pos = listen.find(':');
-                        return listen.substr(colon_pos + 1);
+                        std::string port = listen.substr(colon_pos + 1);
+                        return stringToInteger(port);
                     }
                     if (listen.find('.') != std::string::npos) {
-                        return "80";
+                        return 80;
                     }
-                    return listen;
+                    return stringToInteger(listen);
                 }
             }
         }
     }
-    return "80";  // TODO: throw
+    return 80;  // TODO: throw
 }
 
 bool Configuration::isMethodAllowedFor(const std::string& ip,

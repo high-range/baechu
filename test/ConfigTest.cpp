@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
 
     std::cout << "default port: " << config.getDefaultPort() << std::endl;
 
-    std::vector<std::string> ports = config.getPortNumbers();
+    std::vector<int> ports = config.getPortNumbers();
     std::cout << "ports: ";
     for (size_t i = 0; i < ports.size(); i++) {
         std::cout << ports[i] << ' ';
@@ -63,5 +63,8 @@ int main(int argc, char** argv) {
         std::cout << "status code: " << redirection[0] << std::endl;
         std::cout << "path: " << redirection[1] << std::endl;
     }
+
+    std::string port_number = "8080";
+    std::cout << stringToInteger(port_number) << std::endl;
     return 0;
 }
