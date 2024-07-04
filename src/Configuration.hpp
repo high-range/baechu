@@ -28,7 +28,7 @@ class Configuration {
                                      const std::string& port,
                                      const std::string& server_name,
                                      const std::string& location) const;
-    std::string getDefaultPort() const;
+    int getDefaultPort() const;
     bool isMethodAllowedFor(const std::string& ip, const std::string& port,
                             const std::string& server_name,
                             const std::string& location,
@@ -44,7 +44,7 @@ class Configuration {
                                        const std::string& port,
                                        const std::string& server_name,
                                        const std::string& status_code) const;
-    std::vector<std::string> getPortNumbers() const;
+    std::vector<int> getPortNumbers() const;
     std::vector<std::string> getIndexList(const std::string& ip,
                                           const std::string& port,
                                           const std::string& server_name,
@@ -94,6 +94,7 @@ class Configuration {
 };
 
 std::string trim(const std::string& str);
+int stringToInteger(const std::string& str);
 bool isValidFile(const std::string& file);
 bool isValidBlockName(const std::string& name);
 bool isValidDirectiveKey(const std::string& key);

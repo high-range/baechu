@@ -15,18 +15,6 @@
 #include "RequestData.hpp"
 #include "Response.hpp"
 
-// FOR DEVELOPMENT
-
-static std::vector<std::string> _getCgiExtensions() {
-    std::vector<std::string> cgiExtensions;
-    cgiExtensions.push_back(".py");
-    cgiExtensions.push_back(".pl");
-    return cgiExtensions;
-}
-static std::vector<std::string> _cgiExtensions = _getCgiExtensions();
-
-// END FOR DEVELOPMENT
-
 static std::string lower(std::string s) {
     for (size_t i = 0; i < s.length(); i++) {
         if (isupper(s[i])) {
@@ -77,6 +65,15 @@ std::string Worker::getFullPath(const std::string& path) {
 ResponseData Worker::handleStaticRequest() {
     Configuration& config = Configuration::getInstance();
 
+    if (config.isLocationHaveRedirect(ip, port, serverName, location)) {
+        std::vector<std::string> redirectionInfo =
+            config.getRedirectionInfo(ip, port, serverName, location);
+        std::string statusCode = redirectionInfo[0];
+        std::string redirectPath = redirectionInfo[1];
+        Headers headers;
+        headers["Location"] = redirectPath;
+        return ResponseData(std::stoi(statusCode), headers);
+    }
     if (!config.isMethodAllowedFor(ip, port, serverName, location, method)) {
         return ResponseData(405);
     }
@@ -182,6 +179,7 @@ ResponseData Worker::doGet() {
 
     struct stat buf;
     if (stat(fullPath.c_str(), &buf) != 0) {
+        std::cout << "File not found, fullPath: " << fullPath << std::endl;
         return ResponseData(404);
     }
 
@@ -193,6 +191,7 @@ ResponseData Worker::doGet() {
             headers["Location"] = path + "/";
             return ResponseData(301, headers);
         }
+        std::cout << "Unexpected file type" << std::endl;
         return ResponseData(404);
     }
 
@@ -393,16 +392,22 @@ CgiEnvMap Worker::createCgiEnvMap() {
 }
 
 ResponseData Worker::handleRequest() {
-    for (std::vector<std::string>::iterator it = _cgiExtensions.begin();
-         it != _cgiExtensions.end(); it++) {
-        size_t extPos = path.find(*it);
-        if (extPos != std::string::npos) {
-            size_t dirPos = path.find('/', extPos);
-            if (dirPos == std::string::npos) {
-                dirPos = path.length();
-            }
+    Configuration& config = Configuration::getInstance();
+    size_t dotPos = path.rfind('.');
+    if (dotPos != std::string::npos) {
+        size_t dirPos = path.find('/', dotPos);
+        if (dirPos == std::string::npos) {
+            dirPos = path.length();
+        }
 
-            if (path.substr(extPos, dirPos - extPos) == *it) {
+        std::string ext = path.substr(dotPos, dirPos - dotPos);
+        ext = lower(ext);
+
+        std::vector<std::string> cgiExtensions =
+            config.getCgiExtensions(ip, port, serverName);
+        for (std::vector<std::string>::iterator it = cgiExtensions.begin();
+             it != cgiExtensions.end(); it++) {
+            if (ext == *it) {
                 isStatic = false;
                 pathInfo = path.substr(dirPos);
                 scriptName = path.substr(0, dirPos);

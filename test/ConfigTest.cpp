@@ -12,14 +12,14 @@ int main(int argc, char** argv) {
     std::string ip = "";
     std::string port = "";
     std::string server_name = "";
-    std::string location = "/a/";
+    std::string location = "";
     std::cout << "root: "
               << config.getRootDirectory(ip, port, server_name, location)
               << std::endl;
 
     std::cout << "default port: " << config.getDefaultPort() << std::endl;
 
-    std::vector<std::string> ports = config.getPortNumbers();
+    std::vector<int> ports = config.getPortNumbers();
     std::cout << "ports: ";
     for (size_t i = 0; i < ports.size(); i++) {
         std::cout << ports[i] << ' ';
@@ -43,7 +43,28 @@ int main(int argc, char** argv) {
     }
     std::cout << std::endl;
 
+    std::vector<std::string> extensions =
+        config.getCgiExtensions(ip, port, server_name);
+    std::cout << "cgi extensions: ";
+    for (size_t i = 0; i < extensions.size(); i++) {
+        std::cout << extensions[i] << ' ';
+    }
+    std::cout << std::endl;
+
     std::cout << "cgi path: " << config.getCgiPath(ip, port, server_name, ".py")
               << std::endl;
+
+    std::cout << "isRedirect: "
+              << config.isLocationHaveRedirect(ip, port, server_name, location)
+              << std::endl;
+    std::vector<std::string> redirection =
+        config.getRedirectionInfo(ip, port, server_name, location);
+    if (redirection.size() != 0) {
+        std::cout << "status code: " << redirection[0] << std::endl;
+        std::cout << "path: " << redirection[1] << std::endl;
+    }
+
+    std::string port_number = "8080";
+    std::cout << stringToInteger(port_number) << std::endl;
     return 0;
 }
