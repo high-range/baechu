@@ -15,7 +15,7 @@
 <body>
     <header>
         <div class="container">
-            <h1>Webserv Evaluation Page</h1>
+            <!-- <h1>Webserv Evaluation Page</h1>
             <nav>
                 <ul>
                     <li><a href="index.html">Home</a></li>
@@ -24,7 +24,7 @@
                     <li><a href="setup.html">Setup</a></li>
                     <li><a href="contact.html">Contact</a></li>
                 </ul>
-            </nav>
+            </nav> -->
         </div>
     </header>
     <main>
@@ -37,15 +37,18 @@
                 <h2>Mandatory Part</h2>
                 <h3>Configuration Tests</h3>
                 <ul>
-                    <li>Setup multiple servers with different ports: <a href="http://localhost:8080">Port 8080</a>, <a href="http://localhost:8081">Port 8081</a></li>
-                    <li>Setup default error page (try to access a non-existing page): <a href="/non-existing-page">404 Error Page</a></li>
+                    <li>Setup multiple servers with different ports: <a href="http://localhost:8080">Port 8080</a>, <a
+                            href="http://localhost:8081">Port 8081</a></li>
+                    <li>Setup default error page (try to access a non-existing page): <a href="/non-existing-page">404
+                            Error Page</a></li>
                     <li>Limit the client body (try to upload a large file)</li>
                     <li>Setup routes in a server to different directories</li>
-                    <li>Setup a default file to search for if you ask for a directory: <a href="/directory">Directory</a></li>
+                    <li>Setup a default file to search for if you ask for a directory: <a
+                            href="/directory">Directory</a></li>
                     <li>Setup a list of methods accepted for a certain route</li>
                 </ul>
             </section>
-            <section>
+            <!-- <section>
                 <h3>Basic Checks</h3>
                 <div class="test-section">
                     <h4>GET request</h4>
@@ -54,7 +57,8 @@
                 </div>
                 <div class="test-section">
                     <h4>POST request (raw)</h4>
-                    <form id="post-form-raw" action="/submit_raw" method="post" onsubmit="return handleRawPostRequest(event)">
+                    <form id="post-form-raw" action="/submit_raw" method="post"
+                        onsubmit="return handleRawPostRequest(event)">
                         <label for="raw-content-type">Content-Type:</label>
                         <select id="raw-content-type" name="content-type">
                             <option value="text/plain">text/plain</option>
@@ -71,7 +75,8 @@
                 </div>
                 <div class="test-section">
                     <h4>POST request (binary)</h4>
-                    <form id="post-form-binary" action="/submit_binary" method="post" enctype="multipart/form-data" onsubmit="return handleBinaryPostRequest(event)">
+                    <form id="post-form-binary" action="/submit_binary" method="post"
+                        onsubmit="return handleBinaryPostRequest(event)">
                         <label for="binary-file">Choose file:</label>
                         <input type="file" id="binary-file" name="binary-file" required>
                         <button type="submit">Upload</button>
@@ -84,8 +89,11 @@
                     <div class="code-container">
                         <pre><code>curl -X DELETE http://localhost:8080/delete_endpoint</code></pre>
                         <button class="copy-btn" onclick="copyCode(this)">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" class="icon-sm">
-                                <path fill="currentColor" fill-rule="evenodd" d="M7 5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-2v2a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3h2zm2 2h5a3 3 0 0 1 3 3v5h2a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-9a1 1 0 0 0-1 1zM5 9a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1z" clip-rule="evenodd"></path>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+                                viewBox="0 0 24 24" class="icon-sm">
+                                <path fill="currentColor" fill-rule="evenodd"
+                                    d="M7 5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-2v2a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3h2zm2 2h5a3 3 0 0 1 3 3v5h2a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-9a1 1 0 0 0-1 1zM5 9a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1z"
+                                    clip-rule="evenodd"></path>
                             </svg>
                             Copy code
                         </button>
@@ -93,12 +101,17 @@
                 </div>
                 <div class="test-section">
                     <h4>UNKNOWN request</h4>
-                    <p>Use a tool like Postman or curl to send an unsupported request type to <code>/unknown_endpoint</code>.</p>
+                    <p>Use a tool like Postman or curl to send an unsupported request type to
+                        <code>/unknown_endpoint</code>.
+                    </p>
                     <div class="code-container">
                         <pre><code>curl -X UNKNOWN http://localhost:8080/unknown_endpoint</code></pre>
                         <button class="copy-btn" onclick="copyCode(this)">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" class="icon-sm">
-                                <path fill="currentColor" fill-rule="evenodd" d="M7 5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-2v2a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3h2zm2 2h5a3 3 0 0 1 3 3v5h2a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-9a1 1 0 0 0-1 1zM5 9a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1z" clip-rule="evenodd"></path>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+                                viewBox="0 0 24 24" class="icon-sm">
+                                <path fill="currentColor" fill-rule="evenodd"
+                                    d="M7 5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-2v2a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3h2zm2 2h5a3 3 0 0 1 3 3v5h2a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-9a1 1 0 0 0-1 1zM5 9a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1z"
+                                    clip-rule="evenodd"></path>
                             </svg>
                             Copy code
                         </button>
@@ -106,14 +119,15 @@
                 </div>
                 <div class="test-section">
                     <h4>Upload and retrieve a file</h4>
-                    <form id="upload-form" action="/upload_file" method="post" enctype="multipart/form-data" onsubmit="return handleFileUpload(event)">
+                    <form id="upload-form" action="/upload_file" method="post" enctype="multipart/form-data"
+                        onsubmit="return handleFileUpload(event)">
                         <label for="file">Choose file:</label>
                         <input type="file" id="file" name="file" required>
                         <button type="submit">Upload</button>
                     </form>
                     <div id="upload-result"></div>
                 </div>
-            </section>
+            </section> -->
             <section>
                 <h3>CGI Tests</h3>
                 <ul>
@@ -144,7 +158,8 @@
             <section>
                 <h3>Port Issues</h3>
                 <ul>
-                    <li>Test multiple ports and websites: <a href="http://localhost:8082">Port 8082</a>, <a href="http://localhost:8083">Port 8083</a></li>
+                    <li>Test multiple ports and websites: <a href="http://localhost:8082">Port 8082</a>, <a
+                            href="http://localhost:8083">Port 8083</a></li>
                     <li>Test same port multiple times (check configuration file)</li>
                     <li>Launch multiple servers with common ports</li>
                 </ul>
