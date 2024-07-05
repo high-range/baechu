@@ -9,7 +9,6 @@ const std::set<std::string> createValidBlockNames() {
     s.insert("server");
     s.insert("location");
     s.insert("cgi");
-    s.insert("events");
     return s;
 }
 
@@ -21,47 +20,33 @@ const std::set<std::string> createValidDirectiveKeys() {
     s.insert("index");
     s.insert("limit_except");          // syntax check O
     s.insert("client_max_body_size");  // syntax check O
-    s.insert("default_type");
     s.insert("server_name");
-    s.insert("charset");
-    s.insert("include");
-    s.insert("sendfile");
     s.insert("return");  // syntax check O
-    s.insert("autoindex");
+    s.insert("autoindex");	//syntax check O
     return s;
 }
 
 const std::set<std::string> createValidMainDirectives() {
     std::set<std::string> s;
-    s.insert("env");
     s.insert("http");
-    s.insert("events");
-    s.insert("user");
     return s;
 }
 
 const std::set<std::string> createValidHttpDirectives() {
     std::set<std::string> s;
-    s.insert("client_max_body_size");
-    s.insert("default_type");
-    s.insert("error_page");
     s.insert("server");
-    s.insert("root");
-    s.insert("type");
-    s.insert("include");
     return s;
 }
 
 const std::set<std::string> createValidServerDirectives() {
     std::set<std::string> s;
     s.insert("client_max_body_size");
-    s.insert("default_type");
     s.insert("error_page");
     s.insert("root");
     s.insert("server_name");
-    s.insert("type");
     s.insert("listen");
     s.insert("cgi");
+    s.insert("location");
     return s;
 }
 
@@ -69,7 +54,6 @@ const std::set<std::string> createValidLocationDirectives() {
     std::set<std::string> s;
     s.insert("client_max_body_size");
     s.insert("root");
-    s.insert("type");
     s.insert("index");
     s.insert("limit_except");
     s.insert("return");
@@ -179,11 +163,9 @@ bool isValidMethods(const std::string& method) {
 
 bool isValidFile(const std::string& file) {
     if (file.length() < 5) {
-        std::cerr << "Error: Invalid file \"" << file << "\"" << std::endl;
         return false;
     }
     if (file.substr(file.length() - 5) != ".conf") {
-        std::cerr << "Error: Invalid file \"" << file << "\"" << std::endl;
         return false;
     }
     return true;

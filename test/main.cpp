@@ -18,13 +18,18 @@ int main(int argc, char* argv[]) {
     }
 
     Configuration& config = Configuration::getInstance();
-    config.initialize(filename);
+    try {
+        config.initialize(filename);
+    } catch (const std::runtime_error& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
 
     Connector Connector;
-    Connector.addServer(8080);
-    Connector.addServer(8081);
-    Connector.addServer(8082);
-    Connector.addServer(8083);
+    std::vector<int> ports = config.getPortNumbers();
+    for (size_t i = 0; i < ports.size(); i++) {
+        Connector.addServer(ports[i]);
+    }
 
     Connector.start();
 

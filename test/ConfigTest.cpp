@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
     std::string ip = "";
     std::string port = "";
     std::string server_name = "";
-    std::string location = "";
+    std::string location = "/test/cgi-bin/a";
     std::cout << "root: "
               << config.getRootDirectory(ip, port, server_name, location)
               << std::endl;
@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
     std::cout << std::endl;
 
     std::cout << "error_page: "
-              << config.getErrorPageFromServer(ip, port, server_name, "400")
+              << config.getErrorPageFromServer(ip, port, server_name, "401")
               << std::endl;
 
     std::cout << "autoindex: "
