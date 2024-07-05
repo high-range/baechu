@@ -81,9 +81,7 @@ ResponseData Worker::handleStaticRequest() {
     if (method == GET) {
         return doGet();
     } else if (method == POST) {
-        return handleDynamicRequest();
-    } else if (method == PUT) {
-        return doPut();
+        return doPost();
     } else if (method == DELETE) {
         return doDelete();
     }
@@ -213,7 +211,7 @@ ResponseData Worker::doGet() {
     return ResponseData(403);
 }
 
-ResponseData Worker::doPut() {
+ResponseData Worker::doPost() {
     struct stat buf;
     if (stat(fullPath.c_str(), &buf) == 0) {
         if (S_ISDIR(buf.st_mode)) {

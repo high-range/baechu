@@ -35,6 +35,13 @@ function loadContent(page, buttonElement) {
                 
                 // Fade in new content
                 contentContainer.style.opacity = 1;
+
+                // Dynamically load JavaScript file for the loaded content
+                if (page === 'evaluation.html') {
+                    const script = document.createElement('script');
+                    script.src = 'evaluation.js';
+                    document.body.appendChild(script);
+                }
             })
             .catch(error => console.error('Error loading content:', error));
     }, 500); // Match this delay with the fade-out duration
