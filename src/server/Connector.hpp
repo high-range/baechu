@@ -11,7 +11,7 @@
 
 #define BUFFER_SIZE 1024
 #define BACKLOG 128
-#define MAX_EVENTS 10
+#define MAX_EVENTS 1000
 
 class Connector {
   public:
@@ -31,7 +31,6 @@ class Connector {
 
     void handleEvent(struct kevent& event);
     bool acceptConnection(struct kevent& event);
-    void closeConnection(int client_fd);
     void handleRead(struct kevent& event);
     void handleWrite(struct kevent& event);
     void setNonBlocking(int fd);
