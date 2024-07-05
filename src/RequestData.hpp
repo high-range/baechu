@@ -12,6 +12,9 @@ typedef std::map<std::string, std::string> Header;
 
 class RequestData {
   private:
+    std::string rawData;
+
+    // request message info
     struct StartLine {
         std::string method;
         std::string requestTarget;
@@ -22,7 +25,6 @@ class RequestData {
     Header header;
     std::string body;
     Header bodyHeader;
-    // request message info
 
     struct ClientData {
         std::string port;
@@ -57,6 +59,14 @@ class RequestData {
     std::string getServerIP() const;
     std::string getClientPort() const;
     std::string getClientIP() const;
+    void setClientData(sockaddr_in client);
+    void setServerData(sockaddr_in host);
+
+    // TEMPORARY
+    void appendData(const std::string& data);
+    void clearData();
+    bool isHeaderComplete() const;
+    bool isBodyComplete() const;
 
     friend class Request;
 };

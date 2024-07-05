@@ -14,13 +14,6 @@ char* my_inet_ntoa(struct in_addr in) {
     return buffer;
 }
 
-RequestData::RequestData(sockaddr_in serverAddr, sockaddr_in clientAddr) {
-    serverData.ip = my_inet_ntoa(serverAddr.sin_addr);
-    serverData.port = std::to_string(ntohs(serverAddr.sin_port));
-    clientData.ip = my_inet_ntoa(clientAddr.sin_addr);
-    clientData.port = std::to_string(ntohs(clientAddr.sin_port));
-}
-
 std::string RequestData::getMethod() const { return startLine.method; };
 std::string RequestData::getRequestTarget() const {
     return startLine.requestTarget;
@@ -86,3 +79,29 @@ void RequestData::setBodyHeader(const std::string& key,
 }
 
 void RequestData::setBody(const std::string& body) { this->body = body; }
+
+void RequestData::setClientData(sockaddr_in client) {
+    clientData.ip = my_inet_ntoa(client.sin_addr);
+    clientData.port = std::to_string(ntohs(client.sin_port));
+}
+void RequestData::setServerData(sockaddr_in server) {
+    serverData.ip = my_inet_ntoa(server.sin_addr);
+    serverData.port = std::to_string(ntohs(server.sin_port));
+}
+
+// TEMPORARY
+void RequestData::appendData(const std::string& data) { rawData += data; }
+void RequestData::clearData() { rawData.clear(); }
+bool RequestData::isHeaderComplete() const {
+    return rawData.find("\r\n\r\n") != std::string::npos;
+}
+bool RequestData::isBodyComplete() const {
+    std::string bodyHeaderName = getBodyHeaderName();
+    if (bodyHeaderName == "content-length") {
+        size_t contentLength = std::stoi(header.at("content-length"));
+        return body.size() == contentLength;
+    } else if (bodyHeaderName == "transfer-encoding") {
+        return body.find("0\r\n\r\n") != std::string::npos;
+    }
+    return true;
+}
