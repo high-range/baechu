@@ -15,46 +15,28 @@ Configuration& Configuration::getInstance() {
 
 // Method to initialize the Configuration with a filename
 void Configuration::initialize(const std::string& filename) {
-    if (!isValidFile(filename)) {
-        exit(EXIT_FAILURE);
-    }
     parseConfigFile(filename);
-    if (isValidServerBlockPlacement(blocks, "") == false) {
-        std::cout << "Error: \"server\" directive is in the wrong location."
-                  << std::endl;
-        exit(EXIT_FAILURE);
+    if (!isDuplicatedHttp()) {
+        throw std::runtime_error("only one \"http\" directive must exist");
     }
     if (!isServerHavePort()) {
-        exit(EXIT_FAILURE);
-    }
-    if (!checkMethods()) {
-        exit(EXIT_FAILURE);
-    }
-    if (!checkErrorPage()) {
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("\"server\" directive has not \"listen\"");
     }
     if (!isValidCgiPath()) {
-        exit(EXIT_FAILURE);
-    }
-    if (!isDuplicatedHttp()) {
-        exit(EXIT_FAILURE);
-    }
-    if (!isValidRedirect()) {
-        exit(EXIT_FAILURE);
-    }
-    if (!isValidCgiPath()) {
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("invalid \"cgi\" directive format");
     }
 }
 
 // -------------------------- Parsing 함수 -------------------------------
 void Configuration::parseConfigFile(const std::string& filename) {
+    if (!isValidFile(filename)) {
+        throw std::runtime_error("Invalid file: " + filename);
+    }
+
     std::cout << "Set \"" << filename << "\" Setting" << std::endl;
     std::ifstream file(filename);
     if (!file.is_open()) {
-        std::cerr << "Error: Unable to open file \"" << filename << "\""
-                  << std::endl;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("Unable to open file \"" + filename + "\"");
     }
 
     std::string line;
@@ -71,56 +53,52 @@ void Configuration::parseConfigFile(const std::string& filename) {
         // 블록 시작
         if (line.find("{") != std::string::npos) {
             std::string block_name = trim(line.substr(0, line.find('{')));
-            if (!isValidBlockName(block_name) ||
-                !isValidKeyInBlock("main", block_name)) {
-                std::cerr << "Error: Invalid block \"" << block_name
-                          << "\" in \"main\"" << std::endl;
-                exit(EXIT_FAILURE);
+            if (!isValidBlockName(block_name)) {
+                throw std::runtime_error("unknown directive: \"" + block_name +
+                                         "\"");
+            }
+            if (!isValidKeyInBlock("main", block_name)) {
+                throw std::runtime_error("invalid block \"" + block_name +
+                                         "\" in \"main\"");
             }
             Block block;
             block.name = block_name;
             if (parseBlock(file, block)) {
                 blocks.push_back(block);
             } else {
-                std::cerr << "Error: Block not closed." << std::endl;
-                exit(EXIT_FAILURE);
+                throw std::runtime_error("block not closed");
             }
         } else {
             size_t space_pos = line.find(' '), tap_pos = line.find('\t');
             size_t separator_pos = std::min(space_pos, tap_pos);
-            size_t end_pos = line.find(';');
+            size_t end_pos = line.length() - 1;
 
-            if (end_pos == std::string::npos) {
+            if (line[end_pos] != ';') {
                 if (end_pos == std::string::npos) {
-                    std::cerr << "Error: Directive not finished with ';'"
-                              << std::endl;
-                    exit(EXIT_FAILURE);
+                    throw std::runtime_error("directive should end with ';'");
                 }
             }
             if (separator_pos != std::string::npos) {
                 std::string key = trim(line.substr(0, separator_pos));
                 if (!isValidDirectiveKey(key)) {
-                    std::cerr << "Error: Unknown directive key: \"" << key
-                              << "\"" << std::endl;
-                    exit(EXIT_FAILURE);
+                    throw std::runtime_error("unknown directive: \"" + key +
+                                             "\"");
                 }
                 std::string value = trim(line.substr(
                     separator_pos + 1, end_pos - separator_pos - 1));
                 if (value.empty()) {
-                    std::cerr << "Error: There is no value for key \"" << key
-                              << "\"" << std::endl;
-                    exit(EXIT_FAILURE);
+                    throw std::runtime_error("no value for directive \"" + key +
+                                             "\"");
                 }
                 if (!isValidKeyInBlock("main", key)) {
-                    std::cerr << "Error: directive \"" << key
-                              << "\" not allowed in block \"main\""
-                              << std::endl;
-                    exit(EXIT_FAILURE);
+                    throw std::runtime_error(
+                        "directive \"" + key +
+                        "\" not allowed in block \"main\"");
                 }
                 simple_directives[key] = value;
             } else {
-                std::cerr << "Error: No key" << std::endl;
-                exit(EXIT_FAILURE);
+                throw std::runtime_error("invalid directive format in \"" +
+                                         line + "\"");
             }
         }
     }
@@ -141,135 +119,156 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
 
         if (line.find("{") != std::string::npos) {
             std::string block_name = trim(line.substr(0, line.find('{')));
-            if (!isValidBlockName(block_name) ||
-                !isValidKeyInBlock(current_block.name, block_name)) {
-                std::cerr << "Error: Invalid block \"" << block_name
-                          << "\" in \"" << current_block.name << "\""
-                          << std::endl;
-                exit(EXIT_FAILURE);
+            if (!isValidBlockName(block_name)) {
+                throw std::runtime_error("unknown directive: \"" + block_name +
+                                         "\"");
+            }
+            if (!isValidKeyInBlock(current_block.name, block_name)) {
+                throw std::runtime_error("invalid block \"" + block_name +
+                                         "\" in \"" + current_block.name +
+                                         "\"");
             }
             Block block;
             block.name = block_name;
             // location name 은 '/'로 끝나야함
             if (block_name.find("location ") != std::string::npos &&
                 block_name.back() != '/') {
-                std::cerr << "Error: location name should be ended with \'/\'"
-                          << std::endl;
-                exit(EXIT_FAILURE);
+                throw std::runtime_error("location name should end with '/'");
             }
             if (parseBlock(file, block)) {
                 current_block.sub_blocks.push_back(block);
             } else {
-                std::cerr << "Error: Block not closed." << std::endl;
-                exit(EXIT_FAILURE);
+                throw std::runtime_error("block not closed");
             }
         } else if (line.find('}') != std::string::npos) {
             openBraces--;
             if (openBraces == 0) {
                 return true;
             } else {
-                std::cerr << "Error: Block not closed." << std::endl;
-                exit(EXIT_FAILURE);
+                throw std::runtime_error("block not closed");
             }
         } else {
             size_t space_pos = line.find(' '), tap_pos = line.find('\t');
             size_t separator_pos = std::min(space_pos, tap_pos);
-            size_t end_pos = line.find(';');
+            size_t end_pos = line.length() - 1;
 
-            if (end_pos == std::string::npos) {
-                std::cerr << "Error: Directive not finished with ';'"
-                          << std::endl;
-                exit(EXIT_FAILURE);
+            if (line[end_pos] != ';') {
+                throw std::runtime_error("directive should end with ';'");
             }
             if (separator_pos != std::string::npos) {
                 std::string key = trim(line.substr(0, separator_pos));
                 if (!isValidDirectiveKey(key)) {
-                    std::cerr << "Error: Invalid directive key: \"" << key
-                              << "\"" << std::endl;
-                    exit(EXIT_FAILURE);
+                    throw std::runtime_error("invalid directive \"" + key +
+                                             "\"");
                 }
                 std::string value = trim(line.substr(
                     separator_pos + 1, end_pos - separator_pos - 1));
                 if (value.empty()) {
-                    std::cerr << "Error: There is no value for key \"" << key
-                              << "\"" << std::endl;
-                    exit(EXIT_FAILURE);
+                    throw std::runtime_error("no value for directive \"" + key +
+                                             "\"");
                 }
                 if (!isValidKeyInBlock(current_block.name, key)) {
-                    std::cerr << "Error: directive \"" << key
-                              << "\" not allowed in block \""
-                              << current_block.name << "\"" << std::endl;
-                    exit(EXIT_FAILURE);
+                    throw std::runtime_error("directive \"" + key +
+                                             "\" not allowed in block \"" +
+                                             current_block.name + "\"");
                 }
+
                 if (key == "client_max_body_size") {
-                    if (!std::isdigit(value[0])) {
-                        std::cerr << "Error: \"client_max_body_size\" "
-                                     "directive has invalid value"
-                                  << std::endl;
-                        exit(EXIT_FAILURE);
+                    if (!std::isdigit(value[0]) ||
+                        (!std::isdigit(value[value.length() - 1]) &&
+                         value[value.length() - 1] != 'M')) {
+                        throw std::runtime_error(
+                            "directive \"client_max_body_size\" has invalid "
+                            "value \"" +
+                            value + "\"");
                     }
-                    for (size_t i = 0; i < value.length(); i++) {
-                        if (!(std::isdigit(value[0]) || value[i] == 'M') ||
-                            ((i < value.length() - 1) && value[i] == 'M')) {
-                            std::cerr << "Error: \"client_max_body_size\" "
-                                         "directive has invalid value"
-                                      << std::endl;
-                            exit(EXIT_FAILURE);
+                    for (size_t i = 0; i < value.length() - 1; i++) {
+                        if (!std::isdigit(value[i])) {
+                            throw std::runtime_error(
+                                "directive \"client_max_body_size\" has "
+                                "invalid value \"" +
+                                value + "\"");
                         }
                     }
-                }
-                if (key == "listen") {
+                } else if (key == "listen") {
                     if (!isValidListen(value)) {
-                        std::cerr << "Error: \"listen\" directive has invalid "
-                                     "value \""
-                                  << value << "\"" << std::endl;
-                        exit(EXIT_FAILURE);
+                        throw std::runtime_error(
+                            "directive \"listen\" has invalid value \"" +
+                            value + "\"");
                     }
-                }
+                } else if (key == "limit_except") {
+                    std::stringstream ss(value);
+                    std::string method;
+                    while (ss >> method) {
+                        if (!isValidMethods(method)) {
+                            throw std::runtime_error(
+                                "method only allows \"GET\", \"POST\", and "
+                                "\"DELETE\"");
+                        }
+                    }
+                } else if (key == "error_page") {
+                    std::stringstream ss(value);
+                    std::vector<std::string> errors;
+                    std::string word;
+                    while (ss >> word) {
+                        errors.push_back(word);
+                    }
+                    for (size_t i = 0; i < errors.size() - 1; i++) {
+                        for (size_t j = 0; j < errors[i].length(); j++) {
+                            if (!std::isdigit(errors[i][j])) {
+                                throw std::runtime_error(
+                                    "invalid statusCode \"" + errors[i] + "\"");
+                            }
+                        }
+                        if (errors[i].size() != 3 ||
+                            !(errors[i][0] >= '3' && errors[i][0] <= '5')) {
+                            throw std::runtime_error(
+                                "statusCode must be between 300 and 599");
+                        }
+                    }
+                    if (errors[errors.size() - 1][0] != '/') {
+                        throw std::runtime_error("invalid error_page path");
+                    }
+                } else if (key == "return") {
+                    size_t separator_pos = value.find(' ');
+                    if (separator_pos == std::string::npos) {
+                        throw std::runtime_error("invalid return code \"" +
+                                                 value + "\"");
+                    }
+                    std::string status_code = value.substr(0, separator_pos);
+                    if (status_code.length() > 3) {
+                        throw std::runtime_error("invalid return code \"" +
+                                                 status_code + "\"");
+                    }
+                    for (size_t i = 0; i < status_code.length(); i++) {
+                        if (!std::isdigit(status_code[i])) {
+                            throw std::runtime_error("invalid return code \"" +
+                                                     status_code + "\"");
+                        }
+                    }
+                    std::string path = value.substr(separator_pos + 1);
+                    if (path.empty()) {
+                        throw std::runtime_error("invalid return code \"" +
+                                                 value + "\"");
+                    }
+                } else if (key == "autoindex") {
+					if (value != "on" && value != "off") {
+						throw std::runtime_error("directive \"autoindex\" must be \"on\" or \"off\"");
+					}
+				}
                 current_block.directives[key] = value;
             } else {
-                std::cerr << "Error: No key" << std::endl;
-                exit(EXIT_FAILURE);
+                throw std::runtime_error("no directive in \"" + line + "\"");
             }
         }
     }
     if (openBraces != 0) {
-        std::cerr << "Error: Block not closed." << std::endl;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("block not closed");
     }
     return true;
 }
 
 // ---------------------------- syntax check --------------------------------
-bool Configuration::hasServerBlocks(
-    const std::vector<Block>& recur_block) const {
-    for (std::vector<Block>::const_iterator block_it = recur_block.begin();
-         block_it != recur_block.end(); ++block_it) {
-        if (block_it->name == "server") {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Configuration::isValidServerBlockPlacement(
-    const std::vector<Block>& recur_block,
-    const std::string& upper_block) const {
-    if (upper_block != "http") {
-        if (hasServerBlocks(recur_block)) {
-            return false;
-        }
-    }
-    for (std::vector<Block>::const_iterator block_it = recur_block.begin();
-         block_it != recur_block.end(); ++block_it) {
-        if (!isValidServerBlockPlacement(block_it->sub_blocks,
-                                         block_it->name)) {
-            return false;
-        }
-    }
-    return true;
-}
-
 bool Configuration::isServerHavePort() const {
     for (std::vector<Block>::const_iterator block_it = blocks.begin();
          block_it != blocks.end(); ++block_it) {
@@ -280,94 +279,9 @@ bool Configuration::isServerHavePort() const {
                 if (sub_block_it->name == "server") {
                     if (sub_block_it->directives.find("listen") ==
                         sub_block_it->directives.end()) {
-                        std::cerr << "Error: \"server\" has not \"listen\""
-                                  << std::endl;
                         return false;
                     }
                 }
-            }
-        }
-    }
-    return true;
-}
-
-bool Configuration::checkMethods() const {
-    for (std::vector<Block>::const_iterator block_it = blocks.begin();
-         block_it != blocks.end(); ++block_it) {
-        if (block_it->name == "http") {
-            for (std::vector<Block>::const_iterator sub_it =
-                     block_it->sub_blocks.begin();
-                 sub_it != block_it->sub_blocks.end(); ++sub_it) {
-                if (sub_it->name == "server") {
-                    for (std::vector<Block>::const_iterator it =
-                             sub_it->sub_blocks.begin();
-                         it != sub_it->sub_blocks.end(); ++it) {
-                        if (it->name.find("location ") != std::string::npos) {
-                            if (it->directives.find("limit_except") !=
-                                it->directives.end()) {
-                                std::stringstream ss(
-                                    it->directives.at("limit_except"));
-                                std::string method;
-                                while (ss >> method) {
-                                    if (!isValidMethods(method)) {
-                                        std::cerr << "Error: Invalid method: \""
-                                                  << method << "\""
-                                                  << std::endl;
-                                        return false;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return true;
-}
-
-bool Configuration::checkErrorPage() const {
-    std::vector<std::string> errors;
-    for (std::vector<Block>::const_iterator block_it = blocks.begin();
-         block_it != blocks.end(); ++block_it) {
-        if (block_it->name == "http") {
-            for (std::vector<Block>::const_iterator sub_it =
-                     block_it->sub_blocks.begin();
-                 sub_it != block_it->sub_blocks.end(); ++sub_it) {
-                if (sub_it->name == "server") {
-                    if (sub_it->directives.find("error_page") !=
-                        sub_it->directives.end()) {
-                        std::stringstream ss(
-                            sub_it->directives.at("error_page"));
-                        std::string word;
-                        while (ss >> word) {
-                            errors.push_back(word);
-                        }
-                        for (size_t i = 0; i < errors.size() - 1; i++) {
-                            for (size_t j = 0; j < errors[i].length(); j++) {
-                                if (!std::isdigit(errors[i][j])) {
-                                    std::cerr << "Error: Invalid statusCode \""
-                                              << errors[i] << "\"" << std::endl;
-                                    return false;
-                                }
-                            }
-                            if (errors[i].size() != 3 ||
-                                !(errors[i][0] >= '3' && errors[i][0] <= '5')) {
-                                std::cerr << "Error: statusCode must be "
-                                             "between 300 and 599"
-                                          << std::endl;
-                                return false;
-                            }
-                        }
-                        if (errors[errors.size() - 1][0] != '/') {
-                            std::cerr << "Error: Invalid path \""
-                                      << errors[errors.size() - 1] << "\""
-                                      << std::endl;
-                            return false;
-                        }
-                    }
-                }
-                errors.clear();
             }
         }
     }
@@ -461,26 +375,18 @@ bool Configuration::isValidCgiPath() const {
                         if (it->name.substr(0, 3) == "cgi") {
                             std::string extension = it->name.substr(4);
                             if (extension[0] != '.' || extension.length() < 2) {
-                                std::cerr << "Error: Invalid cgi extension: \""
-                                          << extension << "\"" << std::endl;
                                 return false;
                             }
                             for (size_t i = 1; i < extension.length(); i++) {
                                 if (!std::isalpha(extension[i])) {
-                                    std::cerr
-                                        << "Error: Invalid cgi extension: \""
-                                        << extension << "\"" << std::endl;
                                     return false;
                                 }
                             }
-                            // // cgi 블록에 root 없으면 error ?
-                            // if (it->directives.find("root") ==
-                            //     it->directives.end()) {
-                            //     std::cerr << "Error: \"cgi\" should have "
-                            //                  "\"root\" directive"
-                            //               << std::endl;
-                            //     return false;
-                            // }
+                            // cgi 블록에 root 없으면 error
+                            if (it->directives.find("root") ==
+                                it->directives.end()) {
+                                return false;
+                            }
                         }
                     }
                 }
@@ -498,66 +404,8 @@ bool Configuration::isDuplicatedHttp() const {
             http_count++;
         }
     }
-    if (http_count == 0) {
-        std::cerr << "Error: There is no \"http\" directive" << std::endl;
+    if (http_count != 1) {
         return false;
-    }
-    if (http_count > 1) {
-        std::cerr << "Error: \"http\" directive is duplicate" << std::endl;
-        return false;
-    }
-    return true;
-}
-
-bool Configuration::isValidRedirect() const {
-    for (std::vector<Block>::const_iterator block_it = blocks.begin();
-         block_it != blocks.end(); ++block_it) {
-        if (block_it->name == "http") {
-            for (std::vector<Block>::const_iterator sub_it =
-                     block_it->sub_blocks.begin();
-                 sub_it != block_it->sub_blocks.end(); ++sub_it) {
-                if (sub_it->name == "server") {
-                    for (std::vector<Block>::const_iterator it =
-                             sub_it->sub_blocks.begin();
-                         it != sub_it->sub_blocks.end(); ++it) {
-                        if (it->name.find("location") != std::string::npos) {
-                            if (it->directives.find("return") !=
-                                it->directives.end()) {
-                                std::string value = it->directives.at("return");
-                                size_t separator_pos = value.find(' ');
-                                if (separator_pos == std::string::npos) {
-                                    std::cerr << "Error: Invalid \"return\" "
-                                                 "format: \""
-                                              << value << "\"" << std::endl;
-                                    return false;
-                                }
-                                std::string status_code =
-                                    value.substr(0, separator_pos);
-                                // TODO: valid status code check
-                                std::string path =
-                                    value.substr(separator_pos + 1);
-                                if (path.empty()) {
-                                    std::cerr << "Error: Invalid \"return\" "
-                                                 "format: \""
-                                              << path << "\"" << std::endl;
-                                    return false;
-                                }
-                                for (size_t i = 0; i < status_code.length();
-                                     i++) {
-                                    if (!std::isdigit(status_code[i])) {
-                                        std::cerr << "Error: Invalid "
-                                                     "\"return\" format: \""
-                                                  << status_code << "\""
-                                                  << std::endl;
-                                        return false;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
     return true;
 }
