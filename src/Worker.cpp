@@ -396,7 +396,7 @@ CgiEnvMap Worker::createCgiEnvMap() {
     envMap["CONTENT_TYPE"] = request.getHeader()[CONTENT_TYPE_HEADER];
     envMap["GATEWAY_INTERFACE"] = GATEWAY_INTERFACE;
     envMap["PATH_INFO"] = pathInfo;
-    envMap["PATH_TRANSLATED"] = getFullPath(pathInfo);
+    envMap["PATH_TRANSLATED"] = getFullPath("/") + pathInfo;
     envMap["QUERY_STRING"] = request.getQuery();
     envMap["REMOTE_ADDR"] = request.getClientIP();
     envMap["REMOTE_HOST"] = "";
@@ -429,12 +429,11 @@ ResponseData Worker::handleRequest() {
              it != cgiExtensions.end(); it++) {
             if (ext == *it) {
                 isStatic = false;
-                pathInfo = config.getCgiPath(ip, port, serverName, ext);
-                if (pathInfo.back() != '/') {
-                    pathInfo += '/';
-                }
-                scriptName = path.substr(path.rfind('/') + 1);
-                fullPath = pathInfo + scriptName;
+                pathInfo = path.substr(dirPos);
+                scriptName = path.substr(0, dirPos);
+                std::string cgiPath =
+                    config.getCgiPath(ip, port, serverName, ext);
+                fullPath = cgiPath + scriptName;
                 break;
             }
         }
