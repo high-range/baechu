@@ -24,7 +24,7 @@
                     <div class="release-overlay">
                         <span>2024 • BEACHU</span>
                         <h2>About Webserv</h2>
-                        <button class="stream-button" onclick="location.href='about.html'">Learn More</button>
+                        <button class="stream-button" onclick="loadContent('about.html', this)">Learn More</button>
                     </div>
                     <div class="details">
                         <span class="tag">ABOUT</span>
@@ -35,7 +35,7 @@
                     <div class="release-overlay">
                         <span>2024 • BEACHU</span>
                         <h2>Setup Server</h2>
-                        <button class="stream-button" onclick="location.href='setup.html'">Learn More</button>
+                        <button class="stream-button" onclick="loadContent('setup.html', this)">Learn More</button>
                     </div>
                     <div class="details">
                         <span class="tag">SETUP</span>
@@ -46,29 +46,29 @@
                     <div class="release-overlay">
                         <span>2024 • BEACHU</span>
                         <h2>Features</h2>
-                        <button class="stream-button" onclick="location.href='features.html'">Learn More</button>
+                        <button class="stream-button" onclick="loadContent('features.html', this)">Learn More</button>
                     </div>
                     <div class="details">
                         <span class="tag">FEATURES</span>
                         <p>Discover the core features and technical details of Webserv.</p>
                     </div>
                 </div>
-                <div class="release-item" style="background-color: #8a2be2;">
+                <div class="release-item" style="background-color: #5B63B7">
                     <div class="release-overlay">
                         <span>2024 • BEACHU</span>
                         <h2>Contact Us</h2>
-                        <button class="stream-button" onclick="location.href='contact.html'">Learn More</button>
+                        <button class="stream-button" onclick="loadContent('contact.html', this)">Learn More</button>
                     </div>
                     <div class="details">
                         <span class="tag">CONTACT</span>
                         <p>Get in touch with the Webserv team through our contact page.</p>
                     </div>
                 </div>
-                <div class="release-item" style="background-color: #ff4500;">
+                <div class="release-item" style="background-color: #47817F">
                     <div class="release-overlay">
                         <span>2024 • BEACHU</span>
                         <h2>Evaluation</h2>
-                        <button class="stream-button" onclick="location.href='evaluation.html'">Learn More</button>
+                        <button class="stream-button" onclick="loadContent('evaluation.html', this)">Learn More</button>
                     </div>
                     <div class="details">
                         <span class="tag">EVALUATION</span>
@@ -77,7 +77,13 @@
                 </div>
             </div>
         </div>
+        <div id="content-container"></div>
     </div>
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 Webserv Team | <a href="privacy.html">Privacy Policy</a></p>
+        </div>
+    </footer>
     <script src="script.js"></script>
 </body>
 

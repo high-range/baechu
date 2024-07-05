@@ -10,7 +10,17 @@ body {
   width: 80%;
   margin: 0 auto;
   overflow: hidden;
-  /* Hide the scrollbar */
+}
+
+#content-container {
+  display: hidden;
+  opacity: 0; /* For fade animation */
+  padding: 20px;
+  background-color: #2F4F4F; /* Default color, will be overridden */
+  color: white;
+  margin-top: 20px;
+  border-top: 1px solid #444;
+  transition: opacity 0.5s; /* Animation duration */
 }
 
 header {
@@ -50,23 +60,19 @@ header h1 {
 }
 
 .releases::-webkit-scrollbar {
-  display: none;
-  /* Chrome, Safari and Opera */
+  display: none; /* Chrome, Safari and Opera */
 }
 
 .release-item {
-  flex: 0 0 300px;
-  /* Adjust width as needed */
+  flex: 0 0 300px; /* Adjust width as needed */
   position: relative;
-  height: 300px;
-  /* Adjust height as needed */
+  height: 300px; /* Adjust height as needed */
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   padding: 10px;
   color: white;
-  margin-right: 20px;
-  /* Add some margin between items */
+  margin-right: 20px; /* Add some margin between items */
 }
 
 .release-overlay {
@@ -123,4 +129,50 @@ header h1 {
   color: black;
   text-decoration: none;
   border-radius: 5px;
+}
+
+main {
+  padding: 20px 0;
+}
+
+section {
+  margin-bottom: 20px;
+}
+
+h1, h2, h3 {
+  color: #FFD700;
+}
+
+pre {
+  background-color: #333;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+a {
+  color: #1E90FF;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+ul {
+  padding-left: 20px;
+}
+
+ul li {
+  margin-bottom: 10px;
+}
+
+footer {
+  padding: 10px 0;
+  text-align: center;
+  border-top: 1px solid #444;
+  margin-top: 20px;
+}
+
+footer p {
+  margin: 0;
 }
