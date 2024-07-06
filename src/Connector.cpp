@@ -176,6 +176,7 @@ void Connector::handleRead(struct kevent& event) {
 
             delete &requestData;
             deleteReadEvent(clientFd);
+            deleteTimerEvent(clientFd);
             if (addWriteEvent(clientFd, response) == false) {
                 delete response;
             }
@@ -186,6 +187,7 @@ void Connector::handleRead(struct kevent& event) {
 
         delete &requestData;
         deleteReadEvent(clientFd);
+        deleteTimerEvent(clientFd);
         if (addWriteEvent(clientFd, response) == false) {
             delete response;
         }
@@ -264,8 +266,16 @@ bool Connector::addTimerEvent(int fd, void* udata) {
 
 void Connector::deleteReadEvent(int fd) {
     struct kevent event;
-    EV_SET(&event, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+    EV_SET(&event, fd, EVFILT_READ, EV_DELETE | EV_DISABLE, 0, 0, NULL);
     if (kevent(kq, &event, 1, NULL, 0, NULL) == -1) {
         std::cerr << "Failed to delete read event from kqueue" << std::endl;
+    }
+}
+
+void Connector::deleteTimerEvent(int fd) {
+    struct kevent event;
+    EV_SET(&event, fd, EVFILT_TIMER, EV_DELETE | EV_DISABLE, 0, 0, NULL);
+    if (kevent(kq, &event, 1, NULL, 0, NULL) == -1) {
+        std::cerr << "Failed to delete timer event from kqueue" << std::endl;
     }
 }

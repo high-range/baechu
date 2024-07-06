@@ -37,4 +37,5 @@ class Connector {
     bool addReadEvent(int fd, void* udata);
     bool addTimerEvent(int fd, void* udata);
     void deleteReadEvent(int fd);
+    void deleteTimerEvent(int fd);
 };
