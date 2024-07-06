@@ -5,7 +5,7 @@ import os
 print("Content-Type: text/plain")  # Content-Type을 text/plain으로 변경
 print()
 
-count_file_path = '/goinfre/sihlee/baechu/test/defence/counter.txt'  # 카운트 저장 파일 경로
+count_file_path = '/goinfre/sihlee/baechu/defence/counter.txt'  # 카운트 저장 파일 경로
 
 # Initialize the counter if the file doesn't exist
 if not os.path.exists(count_file_path):

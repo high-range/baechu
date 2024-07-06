@@ -4,7 +4,7 @@ import os
 print("Content-Type: text/plain")
 print()
 
-count_file_path = '/goinfre/sihlee/baechu/test/defence/counter.txt'  # 카운트 저장 파일 경로
+count_file_path = '/goinfre/sihlee/baechu/defence/counter.txt'  # 카운트 저장 파일 경로
 
 # Initialize the counter
 with open(count_file_path, 'w') as file:
