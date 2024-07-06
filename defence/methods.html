@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Webserv Methods Page">
+    <meta name="keywords" content="Webserv, Methods, HTTP server, C++">
+    <title>Webserv Methods Page</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="evaluation.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <h1>HTTP에는 다양한 메소드가 있습니다.</h1>
+            <p>각 메소드는 서버에 요청을 보내는 방식이 다르기 때문에, 서버에서는 이러한 메소드를 구분하여 처리해야 합니다.</p>
+            <ul>
+                <li>GET: 서버에서 데이터를 요청할 때 사용합니다. 웹 페이지를 불러오거나 API에서 데이터를 가져올 때 주로 사용됩니다.</li>
+                <li>POST: 서버에 데이터를 제출할 때 사용합니다. 폼 데이터나 JSON 데이터를 서버로 보낼 때 사용됩니다.</li>
+                <li>PUT: 서버의 데이터를 업데이트할 때 사용됩니다. 기존 리소스를 수정하는 데 주로 사용됩니다.</li>
+                <li>DELETE: 서버의 데이터를 삭제할 때 사용됩니다. 특정 리소스를 제거할 때 사용됩니다.</li>
+                <li>HEAD: GET 메소드와 유사하지만, 응답 본문(body)을 포함하지 않습니다. 주로 헤더 정보를 확인할 때 사용됩니다.</li>
+                <li>OPTIONS: 서버에서 지원하는 HTTP 메소드 목록을 요청할 때 사용됩니다.</li>
+                <li>PATCH: 리소스의 부분적인 수정을 할 때 사용됩니다.</li>
+            </ul>
+            <h3>Webserv 과제에서는 적어도 GET, POST, DELETE 메소드를 구현하고 테스트해야 합니다.</h3>
+        </div>
+    </header>
+    <main>
+        <div class="container">
+            <section>
+                <h2>Methods</h2>
+                <div class="test-section">
+                    <h4>GET request</h4>
+                    <p>Click the link to test a GET request: <a href="about.html" target="_blank">About Page</a></p>
+                    <div id="get-result"></div>
+                </div>
+                <div class="test-section">
+                    <h4>POST request (raw)</h4>
+                    <form id="post-form-raw" action="/submit" method="post"
+                        onsubmit="return handleRawPostRequest(event)">
+                        <label for="raw-content-type">Content-Type:</label>
+                        <select id="raw-content-type" name="content-type">
+                            <option value="text/plain">text/plain</option>
+                            <option value="application/javascript">application/javascript</option>
+                            <option value="application/json">application/json</option>
+                            <option value="text/html">text/html</option>
+                            <option value="application/xml">application/xml</option>
+                        </select>
+                        <label for="raw-content">Content:</label>
+                        <textarea id="raw-content" name="raw-content" required></textarea>
+                        <label for="raw-filename">Filename:</label>
+                        <input type="text" id="raw-filename" name="filename" required>
+                        <button type="submit">Send</button>
+                    </form>
+                    <div id="post-result-raw"></div>
+
+                    <h4>POST request (binary)</h4>
+                    <form id="post-form-binary" action="/submit" method="post"
+                        onsubmit="return handleBinaryPostRequest(event)">
+                        <label for="binary-file">Choose file:</label>
+                        <input type="file" id="binary-file" name="binary-file" required>
+                        <label for="binary-filename">Filename:</label>
+                        <input type="text" id="binary-filename" name="filename" required>
+                        <button type="submit">Upload</button>
+                    </form>
+                    <div id="post-result-binary"></div>
+                </div>
+                <div class="test-section">
+                    <h4>DELETE request</h4>
+                    <p>Use a tool like Postman or curl to send a DELETE request to <code>/delete_endpoint</code>.</p>
+                    <div class="code-container">
+                        <pre><code>curl -X DELETE http://localhost:8080/submit/a.txt</code></pre>
+                        <button class="copy-btn" onclick="copyCode(this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+                                viewBox="0 0 24 24" class="icon-sm">
+                                <path fill="currentColor" fill-rule="evenodd"
+                                    d="M7 5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-2v2a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3h2zm2 2h5a3 3 0 0 1 3 3v5h2a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-9a1 1 0 0 0-1 1zM5 9a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                            Copy code
+                        </button>
+                    </div>
+                    <h4>DELETE request examples</h4>
+                    <p><strong>Test setup:</strong> Run the following commands to create test directories and files:</p>
+                    <div class="code-container">
+                        <pre><code id="setup-code">
+# 테스트 디렉토리 및 파일 생성
+mkdir -p /Users/leesiha/42/baechu/test/defence/delete
+touch /Users/leesiha/42/baechu/test/defence/delete/valid.txt
+mkdir -p /Users/leesiha/42/baechu/test/defence/delete/existing_dir
+mkdir -p /Users/leesiha/42/baechu/test/defence/delete/permission_denied
+touch /Users/leesiha/42/baechu/test/defence/delete/permission_denied/no.txt
+
+# 디렉토리에 대한 쓰기 권한 제거
+sudo chmod 500 /Users/leesiha/42/baechu/test/defence/delete/permission_denied
+        </code></pre>
+                        <button class="copy-btn" onclick="copyCode(this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+                                viewBox="0 0 24 24" class="icon-sm">
+                                <path fill="currentColor" fill-rule="evenodd"
+                                    d="M7 5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-2v2a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3h2zm2 2h5a3 3 0 0 1 3 3v5h2a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-9a1 1 0 0 0-1 1zM5 9a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                            Copy code
+                        </button>
+                    </div>
+                    <p>Use the buttons to test various DELETE request scenarios.</p>
+
+                    <div class="delete-buttons">
+                        <button class="delete-btn" onclick="sendDeleteRequest('/delete/valid.txt')">Delete Existing
+                            File</button>
+                        <button class="delete-btn" onclick="sendDeleteRequest('/delete/nonexistent.txt')">Delete
+                            Non-existent File</button>
+                        <button class="delete-btn" onclick="sendDeleteRequest('/delete/existing_dir')">Delete Existing
+                            Directory</button>
+                        <button class="delete-btn" onclick="sendDeleteRequest('/delete/nonexistent_dir')">Delete
+                            Non-existent Directory</button>
+                        <button class="delete-btn"
+                            onclick="sendDeleteRequest('/delete/permission_denied/no.txt')">Delete File Without
+                            Permission</button>
+                    </div>
+                    <div id="delete-result"></div>
+                </div>
+
+                <div class="test-section">
+                    <h4>UNKNOWN request</h4>
+                    <p>Use a tool like Postman or curl to send an unsupported request type to
+                        <code>/unknown_endpoint</code>.
+                    </p>
+                    <div class="code-container">
+                        <pre><code>curl -X UNKNOWN http://localhost:8080/unknown_endpoint</code></pre>
+                        <button class="copy-btn" onclick="copyCode(this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+                                viewBox="0 0 24 24" class="icon-sm">
+                                <path fill="currentColor" fill-rule="evenodd"
+                                    d="M7 5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-2v2a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3h2zm2 2h5a3 3 0 0 1 3 3v5h2a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-9a1 1 0 0 0-1 1zM5 9a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                            Copy code
+                        </button>
+                    </div>
+                </div>
+                <div class="test-section">
+                    <h4>Upload and retrieve a file</h4>
+                    <form id="upload-form" action="/submit" method="post" enctype="multipart/form-data"
+                        onsubmit="handleFileUpload(event)">
+                        <label for="file">Choose file:</label>
+                        <input type="file" id="file" name="file" required>
+                        <button type="submit">Upload</button>
+                    </form>
+                    <div id="upload-result"></div>
+                    <div id="uploaded-files-container" class="uploaded-files-container"></div>
+                </div>
+            </section>
+        </div>
+    </main>
+</body>
+
+</html>

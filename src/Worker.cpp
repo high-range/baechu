@@ -81,9 +81,7 @@ ResponseData Worker::handleStaticRequest() {
     if (method == GET) {
         return doGet();
     } else if (method == POST) {
-        return ResponseData(405);
-    } else if (method == PUT) {
-        return doPut();
+        return doPost();
     } else if (method == DELETE) {
         return doDelete();
     }
@@ -213,7 +211,7 @@ ResponseData Worker::doGet() {
     return ResponseData(403);
 }
 
-ResponseData Worker::doPut() {
+ResponseData Worker::doPost() {
     struct stat buf;
     if (stat(fullPath.c_str(), &buf) == 0) {
         if (S_ISDIR(buf.st_mode)) {
@@ -248,22 +246,22 @@ ResponseData Worker::doDelete() {
     struct stat buf;
     if (stat(fullPath.c_str(), &buf) == 0) {
         if (S_ISDIR(buf.st_mode)) {
-            return ResponseData(405);
+            return ResponseData(405);  // 디렉토리 삭제는 허용하지 않음
         } else if (S_ISREG(buf.st_mode) || S_ISLNK(buf.st_mode)) {
-            // 디렉토리의 write 권한 확인 (파일 삭제 권한 확인)
+            // 파일이 속한 디렉토리의 쓰기 권한 확인
             std::string dirPath = fullPath.substr(0, fullPath.rfind('/'));
             if (access(dirPath.c_str(), W_OK) != 0) {
-                return ResponseData(403);
+                return ResponseData(403);  // 디렉토리에 대한 쓰기 권한 없음
             }
-            // delete the file
+            // 파일 삭제
             if (std::remove(fullPath.c_str()) == 0) {
-                return ResponseData(200);
+                return ResponseData(200);  // 성공적으로 삭제됨
             }
-            return ResponseData(500);
+            return ResponseData(500);  // 파일 삭제 실패
         }
-        return ResponseData(404);
+        return ResponseData(404);  // 파일이 아니거나 디렉토리도 아님
     }
-    return ResponseData(500);
+    return ResponseData(404);  // 파일이 존재하지 않음
 }
 
 ResponseData Worker::handleDynamicRequest() {
