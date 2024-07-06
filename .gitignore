@@ -6,3 +6,5 @@
 *.o
 webserv
 webserv.a
+
+log.txt
