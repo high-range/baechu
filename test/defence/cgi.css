@@ -1,0 +1,35 @@
+.calculator {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px; /* 간격을 줄입니다 */
+    padding: 10px; /* 패딩을 줄입니다 */
+    background: #333;
+    border-radius: 10px;
+    max-width: 300px; /* 최대 너비를 설정합니다 */
+    margin: 0 auto; /* 중앙 정렬 */
+}
+.calculator input,
+.calculator button {
+    font-size: 1.5em; /* 폰트 크기를 줄입니다 */
+    padding: 10px; /* 패딩을 줄입니다 */
+    border: none;
+    border-radius: 5px;
+    background: #666;
+    color: white;
+    text-align: center;
+}
+.calculator input {
+    grid-column: span 4;
+    background: #444;
+}
+.calculator .operator {
+    background: #f5923e;
+}
+.calculator .equals {
+    grid-column: span 2;
+    background: #f5923e;
+}
+.calculator .clear {
+    grid-column: span 2;
+    background: #ac3939;
+}

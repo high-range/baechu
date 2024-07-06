@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CGI Click Counter and Calculator</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="evaluation.css">
+    <link rel="stylesheet" href="cgi.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Click Counter and Calculator using CGI</h1>
+            <p>Click the button to increase the count or reset to start from zero.</p>
+        </header>
+        <main>
+            <section>
+                <h2>Counter</h2>
+                <div class="test-section">
+                    <h4>Click the button</h4>
+                    <button id="click-button">Click me!</button>
+                    <button id="reset-button">Reset</button>
+                    <div id="click-result">0</div>
+                </div>
+            </section>
+            <section>
+                <h2>Calculator</h2>
+                <div class="calculator">
+                    <input type="text" id="calc-display" disabled value="0">
+                    <button class="clear">AC</button>
+                    <button class="operator">±</button>
+                    <button class="operator">%</button>
+                    <button class="operator">÷</button>
+                    <button>7</button>
+                    <button>8</button>
+                    <button>9</button>
+                    <button class="operator">×</button>
+                    <button>4</button>
+                    <button>5</button>
+                    <button>6</button>
+                    <button class="operator">−</button>
+                    <button>1</button>
+                    <button>2</button>
+                    <button>3</button>
+                    <button class="operator">+</button>
+                    <button>0</button>
+                    <button>.</button>
+                    <button class="equals">=</button>
+                </div>
+                <div id="calculation-result"></div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>
