@@ -6,9 +6,11 @@
 
 class Configuration;
 class RequestData;
+class ResponseData;
 
 class Manager {
   public:
     virtual ~Manager() = 0;
-    static std::string run(std::string requestMessage, RequestData requestData);
+    static std::string run(RequestData requestData);
+    static std::string run(RequestData requestData, ResponseData responseData);
 };

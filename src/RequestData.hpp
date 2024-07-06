@@ -8,10 +8,16 @@
 #include <utility>
 #include <vector>
 
+#include "RequestUtility.hpp"
+
 typedef std::map<std::string, std::string> Header;
 
 class RequestData {
   private:
+    std::string rawData;
+    ParseState state;
+
+    // request message info
     struct StartLine {
         std::string method;
         std::string requestTarget;
@@ -22,7 +28,6 @@ class RequestData {
     Header header;
     std::string body;
     Header bodyHeader;
-    // request message info
 
     struct ClientData {
         std::string port;
@@ -45,7 +50,7 @@ class RequestData {
     const std::string getBodyHeaderName();
 
   public:
-    RequestData(sockaddr_in client, sockaddr_in host);
+    RequestData() : state(Start){};
     std::string getMethod() const;
     std::string getRequestTarget() const;
     std::string getPath() const;
@@ -57,6 +62,17 @@ class RequestData {
     std::string getServerIP() const;
     std::string getClientPort() const;
     std::string getClientIP() const;
+    long long getClientMaxBodySize() const;
+    void setClientData(sockaddr_in client);
+    void setServerData(sockaddr_in host);
+
+    // TEMPORARY
+    void appendData(const std::string& data);
+    void clearData();
+    void clearHeaderData();
+    bool isHeaderComplete();
+    bool isBodyCompleteByContentLength();
+    bool isBodyCompleteByTransferEncoding();
 
     friend class Request;
 };
