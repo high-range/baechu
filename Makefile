@@ -18,7 +18,7 @@ SRCS		= src/Connector.cpp \
 				src/ResponseData.cpp \
 				src/Worker.cpp \
 
-MAIN		= test/main.cpp
+MAIN		= main.cpp
 
 OBJS		= $(SRCS:.cpp=.o) $(MAIN:.cpp=.o)
 

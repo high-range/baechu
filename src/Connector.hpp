@@ -18,12 +18,12 @@ class Connector {
     Connector();
     ~Connector();
 
-    bool addServer(int port);
+    void connectServerPorts();
     void start();
 
   private:
     int kq;
-    std::vector<int> serverSokets;
+    std::vector<int> serverSockets;
 
     void handleEvent(struct kevent& event);
     void acceptConnection(struct kevent& event);

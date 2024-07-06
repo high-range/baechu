@@ -10,6 +10,7 @@
 #include <iostream>
 #include <sstream>
 
+#include "Configuration.hpp"
 #include "Request.hpp"
 #include "ResponseData.hpp"
 
@@ -23,53 +24,68 @@ Connector::Connector() {
 
 Connector::~Connector() {
     std::vector<int>::iterator it;
-    for (it = serverSokets.begin(); it != serverSokets.end(); it++) {
+    for (it = serverSockets.begin(); it != serverSockets.end(); it++) {
         close(*it);
     }
     close(kq);
 }
 
-bool Connector::addServer(int port) {
-    int serverFd = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverFd == -1) {
-        std::cerr << "Failed to create socket" << std::endl;
-        return false;
+void Connector::connectServerPorts() {
+    Configuration& config = Configuration::getInstance();
+    std::vector<int> serverPorts = config.getPortNumbers();
+    int serverFd;
+
+    if (serverPorts.empty()) {
+        throw std::runtime_error(
+            "No server ports specified in configuration file");
     }
+    for (size_t i = 0; i < serverPorts.size(); i++) {
+        serverFd = socket(AF_INET, SOCK_STREAM, 0);
+        if (serverFd == -1) {
+            std::cerr << "Failed to create socket" << std::endl;
+            continue;
+        }
 
-    setNonBlocking(serverFd);
+        setNonBlocking(serverFd);
 
-    sockaddr_in serverAddr;
-    std::memset(&serverAddr, 0, sizeof(serverAddr));
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
-    serverAddr.sin_port = htons(port);
+        sockaddr_in serverAddr;
+        std::memset(&serverAddr, 0, sizeof(serverAddr));
+        serverAddr.sin_family = AF_INET;
+        serverAddr.sin_addr.s_addr = INADDR_ANY;
+        serverAddr.sin_port = htons(serverPorts[i]);
 
-    int opt = 1;
-    if (setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) ==
-        -1) {
-        std::cerr << "Failed to set SO_REUSEADDR" << std::endl;
-        close(serverFd);
-        return false;
+        int opt = 1;
+        if (setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) ==
+            -1) {
+            std::cerr << "Failed to set SO_REUSEADDR" << std::endl;
+            close(serverFd);
+            continue;
+        }
+
+        if (bind(serverFd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) ==
+            -1) {
+            std::cerr << "Failed to bind socket on port " << serverPorts[i]
+                      << std::endl;
+            close(serverFd);
+            continue;
+        }
+
+        if (listen(serverFd, BACKLOG) == -1) {
+            std::cerr << "Failed to listen on socket" << std::endl;
+            close(serverFd);
+            continue;
+        }
+
+        if (addReadEvent(serverFd, NULL) == false) {
+            continue;
+        }
+
+        serverSockets.push_back(serverFd);
+        std::cout << "Server started on port " << serverPorts[i] << std::endl;
     }
-
-    if (bind(serverFd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) ==
-        -1) {
-        std::cerr << "Failed to bind socket on port " << port << std::endl;
-        close(serverFd);
-        return false;
+    if (serverSockets.empty()) {
+        throw std::runtime_error("Failed to start server on any port");
     }
-
-    if (listen(serverFd, BACKLOG) == -1) {
-        std::cerr << "Failed to listen on socket" << std::endl;
-        close(serverFd);
-        return false;
-    }
-
-    addReadEvent(serverFd, NULL);
-
-    serverSokets.push_back(serverFd);
-    std::cout << "Server started on port " << port << std::endl;
-    return true;
 }
 
 void Connector::start() {
