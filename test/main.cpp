@@ -6,7 +6,7 @@
 #include <sstream>
 
 #include "Configuration.hpp"
-#include "server/Connector.hpp"
+#include "Connector.hpp"
 
 int main(int argc, char* argv[]) {
     std::string filename = "./conf/default.conf";

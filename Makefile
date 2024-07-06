@@ -7,16 +7,16 @@ ARFILE		= webserv.a
 
 INCLUDES_HEADER  = -I src
 
-SRCS		= src/server/Connector.cpp \
-					src/ConfigHelper.cpp \
-					src/Configuration.cpp \
-					src/Manager.cpp \
-					src/Request.cpp \
-					src/RequestData.cpp \
-					src/RequestUtility.cpp \
-					src/Response.cpp \
-					src/ResponseData.cpp \
-					src/Worker.cpp \
+SRCS		= src/Connector.cpp \
+				src/ConfigHelper.cpp \
+				src/Configuration.cpp \
+				src/Manager.cpp \
+				src/Request.cpp \
+				src/RequestData.cpp \
+				src/RequestUtility.cpp \
+				src/Response.cpp \
+				src/ResponseData.cpp \
+				src/Worker.cpp \
 
 MAIN		= test/main.cpp
 
