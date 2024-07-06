@@ -105,10 +105,7 @@ long long RequestUtility::strtonum(const std::string& str) {
         return -1;
     }
     ss >> num;
-    if (!ss.eof()) {
-        return -1;
-    }
-    if (*str.end() == 'M') {
+    if (str.back() == 'M') {
         num *= 1024 * 1024;
     }
     return num;
@@ -121,4 +118,8 @@ long long RequestUtility::hexTonum(const std::string& str) {
     ss << std::hex << str;
     ss >> num;
     return num;
+}
+
+bool RequestUtility::isHeaderComplete(const std::string& rawData) {
+    return rawData.find("\r\n\r\n") != std::string::npos;
 }

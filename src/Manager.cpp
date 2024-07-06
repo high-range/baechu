@@ -38,25 +38,23 @@ void showRequestData(RequestData& requestData) {
     std::cout << "Body: " << requestData.getBody() << std::endl;
 }
 
-std::string Manager::run(std::string requestMessage, RequestData requestData) {
-    try {
-        if (requestMessage.empty()) {
-            throw ResponseData(400);
-        }
+std::string Manager::run(RequestData requestData, ResponseData responseData) {
+    Worker worker = Worker(requestData);
 
-        makeLog(requestMessage, "[Request]\n\n"); // TODO: Remove this line
+    showRequestData(requestData);
+    responseData = worker.redirectOrUse(responseData);
+    // makeLog(Response::messageGenerate(responseData),
+    //         "[Response]\n\n");  // TODO: Remove this line
+    return (Response::messageGenerate(responseData));
+}
 
-        Request::parseMessage(requestMessage, requestData);
+std::string Manager::run(RequestData requestData) {
+    Worker worker = Worker(requestData);
+    ResponseData responseData = worker.handleRequest();
 
-        Worker worker = Worker(requestData);
-        ResponseData responseData = worker.handleRequest();
-        responseData = worker.redirectOrUse(responseData);
-
-        makeLog(Response::messageGenerate(responseData), "[Response]\n\n"); // TODO: Remove this line
-        return (Response::messageGenerate(responseData));
-    } catch (ResponseData& responseData) {
-        responseData = Worker(requestData).redirectOrUse(responseData);
-        makeLog(Response::messageGenerate(responseData), "[Response]\n\n"); // TODO: Remove this line
-        return (Response::messageGenerate(responseData));
-    }
+    showRequestData(requestData);
+    responseData = worker.redirectOrUse(responseData);
+    // makeLog(Response::messageGenerate(responseData),
+    //         "[Response]\n\n");  // TODO: Remove this line
+    return (Response::messageGenerate(responseData));
 }

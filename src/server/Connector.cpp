@@ -10,6 +10,9 @@
 #include <iostream>
 #include <sstream>
 
+#include "Request.hpp"
+#include "ResponseData.hpp"
+
 Connector::Connector() {
     kq = kqueue();
     if (kq == -1) {
@@ -62,13 +65,7 @@ bool Connector::addServer(int port) {
         return false;
     }
 
-    struct kevent eventRead;
-    EV_SET(&eventRead, serverFd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
-    if (kevent(kq, &eventRead, 1, NULL, 0, NULL) == -1) {
-        std::cerr << "Failed to add read event to kqueue" << std::endl;
-        close(serverFd);
-        return false;
-    }
+    addReadEvent(serverFd, NULL);
 
     serverSokets.push_back(serverFd);
     std::cout << "Server started on port " << port << std::endl;
@@ -99,94 +96,90 @@ void Connector::handleEvent(struct kevent& event) {
         }
     } else if (event.filter == EVFILT_WRITE) {
         handleWrite(event);
+    } else if (event.filter == EVFILT_TIMER) {
+        handleTimer(event);
     }
 }
 
-bool Connector::acceptConnection(struct kevent& event) {
+void Connector::acceptConnection(struct kevent& event) {
     int serverFd = event.ident;
     int clientCount = event.data;
 
     while (clientCount > 0) {
-        sockaddr_in clientAddr;
+        sockaddr_in serverAddr, clientAddr;
         socklen_t clientAddrLen = sizeof(clientAddr);
+        socklen_t serverAddrLen = sizeof(serverAddr);
         int clientFd =
             accept(serverFd, (struct sockaddr*)&clientAddr, &clientAddrLen);
         if (clientFd == -1) {
             std::cerr << "Failed to accept connection" << std::endl;
             continue;
         }
-        clientCount--;
+
+        RequestData* requestData = new RequestData();
 
         setNonBlocking(clientFd);
-
-        struct kevent event;
-        EV_SET(&event, clientFd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_ONESHOT,
-               0, 0, &clientAddr);
-        if (kevent(kq, &event, 1, NULL, 0, NULL) == -1) {
-            std::cerr << "Failed to add event" << std::endl;
-            close(clientFd);
-            continue;
+        getsockname(clientFd, (struct sockaddr*)&serverAddr, &serverAddrLen);
+        requestData->setClientData(clientAddr);
+        requestData->setServerData(serverAddr);
+        if (addReadEvent(clientFd, requestData) == false ||
+            addTimerEvent(clientFd, requestData) == false) {
+            delete requestData;
         }
 
-        // 클라이언트 주소 정보 출력. TODO: 추후 삭제
-        std::cout << "\nRequest came from " << inet_ntoa(clientAddr.sin_addr)
-                  << ":" << ntohs(clientAddr.sin_port) << std::endl;
+        clientCount--;
     }
-    return true;
+    // 클라이언트 주소 정보 출력. TODO: 추후 삭제
+    // std::cout << "\nRequest came from " << inet_ntoa(clientAddr.sin_addr) <<
+    // ":" << ntohs(clientAddr.sin_port) << std::endl;
 }
 
 void Connector::handleRead(struct kevent& event) {
-    int clientFd = event.ident;
-    int readCount = event.data;
     std::string request;
+    RequestData& requestData = *static_cast<RequestData*>(event.udata);
+    int clientFd = event.ident;
+    int readSize = event.data;
     char buffer[BUFFER_SIZE];
 
-    for (int i = 0; i < readCount; i++) {
-        std::memset(buffer, 0, sizeof(buffer));  // 버퍼 초기화
-        int bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
-
-        if (bytesRead < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                continue;
-            } else {
-                std::cerr << "Failed to read from socket: " << strerror(errno)
-                          << std::endl;
-                close(clientFd);
-                return;
+    try {
+        if (event.flags)
+            while (readSize > 0) {
+                std::memset(buffer, 0, sizeof(buffer));  // 버퍼 초기화
+                int bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
+                if (bytesRead < 0) {
+                    throw ResponseData(400);
+                }
+                request.append(buffer, bytesRead);
+                readSize -= bytesRead;
             }
-        } else if (bytesRead == 0) {
-            // 클라이언트가 연결을 닫음
-            close(clientFd);
-            std::cout << "<Connection closed>" << std::endl;
-            return;
+
+        requestData.appendData(request);
+
+        if (Request::parseMessage(requestData)) {
+            std::string* response = new std::string(Manager::run(requestData));
+
+            delete &requestData;
+            deleteReadEvent(clientFd);
+            if (addWriteEvent(clientFd, response) == false) {
+                delete response;
+            }
         }
-        request.append(buffer, bytesRead);
-        std::cout << bytesRead << " bytes read (Request message appended)"
-                  << std::endl;
-    }
+    } catch (ResponseData& responseData) {
+        std::string temp = Manager::run(requestData, responseData);
+        std::string* response = new std::string(temp);
 
+        delete &requestData;
+        deleteReadEvent(clientFd);
+        if (addWriteEvent(clientFd, response) == false) {
+            delete response;
+        }
+    }
     // Process the request and prepare the response
-    sockaddr_in serverAddr, clientAddr;
-    socklen_t serverAddrLen = sizeof(serverAddr);
-    getsockname(clientFd, (struct sockaddr*)&serverAddr, &serverAddrLen);
-    clientAddr = *(sockaddr_in*)event.udata;
-    std::string response =
-        Manager::run(request, RequestData(serverAddr, clientAddr));
-
-    clientResponses[clientFd] = response;
-
-    struct kevent newEvent;
-    EV_SET(&newEvent, clientFd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_ONESHOT,
-           0, 0, NULL);
-    if (kevent(kq, &newEvent, 1, NULL, 0, NULL) == -1) {
-        std::cerr << "Failed to add write event to kqueue" << std::endl;
-        close(clientFd);
-    }
 }
 
 void Connector::handleWrite(struct kevent& event) {
     int clientFd = event.ident;
-    std::string& response = clientResponses[clientFd];
+    std::string& response = *static_cast<std::string*>(event.udata);
     ssize_t bytesSent = send(clientFd, response.c_str(), response.size(), 0);
 
     if (bytesSent == -1) {
@@ -194,8 +187,19 @@ void Connector::handleWrite(struct kevent& event) {
     } else if (static_cast<size_t>(bytesSent) == response.size()) {
         std::cout << "<Connection closed>" << std::endl;
     }
-    clientResponses.erase(clientFd);
+    delete &response;
     close(clientFd);
+}
+
+void Connector::handleTimer(struct kevent& event) {
+    int clientFd = event.ident;
+    RequestData& requestData = *static_cast<RequestData*>(event.udata);
+    std::string temp = Manager::run(requestData, ResponseData(408));
+    std::string* response = new std::string(temp);
+
+    delete &requestData;
+    deleteReadEvent(clientFd);
+    addWriteEvent(clientFd, response);
 }
 
 void Connector::setNonBlocking(int fd) {
@@ -204,5 +208,48 @@ void Connector::setNonBlocking(int fd) {
     if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
         std::cerr << "Failed to set non-blocking" << std::endl;
         exit(EXIT_FAILURE);
+    }
+}
+
+bool Connector::addWriteEvent(int fd, void* udata) {
+    struct kevent event;
+    EV_SET(&event, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0,
+           udata);
+    if (kevent(kq, &event, 1, NULL, 0, NULL) == -1) {
+        std::cerr << "Failed to add write event to kqueue" << std::endl;
+        close(fd);
+        return false;
+    }
+    return true;
+}
+
+bool Connector::addReadEvent(int fd, void* udata) {
+    struct kevent event;
+    EV_SET(&event, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, udata);
+    if (kevent(kq, &event, 1, NULL, 0, NULL) == -1) {
+        std::cerr << "Failed to add read event to kqueue" << std::endl;
+        close(fd);
+        return false;
+    }
+    return true;
+}
+
+bool Connector::addTimerEvent(int fd, void* udata) {
+    struct kevent event;
+    EV_SET(&event, fd, EVFILT_TIMER, EV_ADD | EV_ENABLE | EV_ONESHOT,
+           NOTE_SECONDS, 30, udata);
+    if (kevent(kq, &event, 1, NULL, 0, NULL) == -1) {
+        std::cerr << "Failed to add timer event to kqueue" << std::endl;
+        close(fd);
+        return false;
+    }
+    return true;
+}
+
+void Connector::deleteReadEvent(int fd) {
+    struct kevent event;
+    EV_SET(&event, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+    if (kevent(kq, &event, 1, NULL, 0, NULL) == -1) {
+        std::cerr << "Failed to delete read event from kqueue" << std::endl;
     }
 }

@@ -12,10 +12,8 @@ class Configuration;
 class Request {
   public:
     virtual ~Request() = 0;
-    static void parseMessage(std::string& requestMessage,
-                             RequestData& requestData);
-    static std::string parseBodyByContentLength(std::string body,
-                                                std::string length);
-    static std::string parseBodyByTransferEncoding(std::string body,
-                                                   Header& bodyHeader);
+    static bool parseMessage(RequestData& requestData);
+    static void parseHeader(RequestData& requestData);
+    static void parseBodyByContentLength(RequestData& requestData);
+    static void parseBodyByTransferEncoding(RequestData& requestData);
 };

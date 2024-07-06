@@ -1,5 +1,7 @@
 #include "RequestData.hpp"
 
+#include "Configuration.hpp"
+
 char* my_inet_ntoa(struct in_addr in) {
     static char buffer[INET_ADDRSTRLEN];
 
@@ -92,16 +94,32 @@ void RequestData::setServerData(sockaddr_in server) {
 // TEMPORARY
 void RequestData::appendData(const std::string& data) { rawData += data; }
 void RequestData::clearData() { rawData.clear(); }
-bool RequestData::isHeaderComplete() const {
+void RequestData::clearHeaderData() {
+    size_t pos = rawData.find("\r\n\r\n");
+
+    if (pos == std::string::npos) {
+        return;
+    }
+    rawData = rawData.substr(pos + 4, rawData.size() - (pos + 4));
+}
+
+bool RequestData::isHeaderComplete() {
     return rawData.find("\r\n\r\n") != std::string::npos;
 }
-bool RequestData::isBodyComplete() const {
-    std::string bodyHeaderName = getBodyHeaderName();
-    if (bodyHeaderName == "content-length") {
-        size_t contentLength = std::stoi(header.at("content-length"));
-        return body.size() == contentLength;
-    } else if (bodyHeaderName == "transfer-encoding") {
-        return body.find("0\r\n\r\n") != std::string::npos;
-    }
-    return true;
+
+bool RequestData::isBodyCompleteByContentLength() {
+    return static_cast<long long>(rawData.size()) >=
+           RequestUtility::strtonum(header["content-length"]);
+}
+
+bool RequestData::isBodyCompleteByTransferEncoding() {
+    return rawData.find("\r\n\r\n") != std::string::npos;
+}
+
+long long RequestData::getClientMaxBodySize() const {
+    Configuration config = Configuration::getInstance();
+    std::string maxBodySize = config.getClientMaxBodySize(
+        serverData.ip, serverData.port, "", startLine.path);
+
+    return RequestUtility::strtonum(maxBodySize);
 }

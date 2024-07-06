@@ -24,14 +24,17 @@ class Connector {
   private:
     int kq;
     std::vector<int> serverSokets;
-    std::map<int, sockaddr_in> clientAddresses;
-
-    std::map<int, std::string> clientResponses;
-    std::map<int, size_t> responseOffsets;
 
     void handleEvent(struct kevent& event);
-    bool acceptConnection(struct kevent& event);
+    void acceptConnection(struct kevent& event);
     void handleRead(struct kevent& event);
     void handleWrite(struct kevent& event);
+    void handleTimer(struct kevent& event);
+
     void setNonBlocking(int fd);
+
+    bool addWriteEvent(int fd, void* udata);
+    bool addReadEvent(int fd, void* udata);
+    bool addTimerEvent(int fd, void* udata);
+    void deleteReadEvent(int fd);
 };
