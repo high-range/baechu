@@ -23,7 +23,17 @@ class RequestUtility {
     static long long strtonum(const std::string& str);
     static long long hexTonum(const std::string& str);
 
+    static bool isHeaderComplete(const std::string& rawData);
+
     friend class Request;
+    friend class RequestData;
+};
+
+enum ParseState {
+    Start,
+    HeaderIsParsed,
+    Body_ContentLength,
+    Body_TransferEncoding
 };
 
 enum State {
@@ -42,11 +52,7 @@ enum State {
     FieldValue,
     FieldContent,
     ObsFold,
-    HeaderEnd,
-    BodyStart,
-    ContentLength,
-    TransferEncoding,
-    BodyEnd
+    HeaderEnd
 };
 
 enum ChunkState {

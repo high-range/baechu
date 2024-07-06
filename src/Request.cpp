@@ -9,18 +9,68 @@
 #include "RequestUtility.hpp"
 #include "ResponseData.hpp"
 
-void Request::parseMessage(std::string& requestMessage,
-                           RequestData& requestData) {
+bool Request::parseMessage(RequestData& requestData) {
+    ParseState state;
+    std::string bodyHeaderName, bodyHeaderValue;
+
+    while (true) {
+        state = requestData.state;
+        switch (state) {
+            case Start:
+                if (RequestUtility::isHeaderComplete(requestData.rawData)) {
+                    parseHeader(requestData);
+                    requestData.clearHeaderData();
+                } else
+                    return false;
+            case HeaderIsParsed:
+                bodyHeaderName = requestData.getBodyHeaderName();
+                if (bodyHeaderName == "content-length" &&
+                    RequestUtility::isNum(requestData.header[bodyHeaderName])) {
+                    long long contentLength = RequestUtility::strtonum(
+                        requestData.header[bodyHeaderName]);
+                    long long maxBodySize = requestData.getClientMaxBodySize();
+                    if (contentLength > maxBodySize) {
+                        throw ResponseData(413);
+                    }
+                    requestData.state = Body_ContentLength;
+                } else if (bodyHeaderName == "transfer-encoding" &&
+                           requestData.header[bodyHeaderName] == "chunked") {
+                    requestData.state = Body_TransferEncoding;
+                } else if (bodyHeaderName == "") {
+                    return true;
+                } else
+                    throw ResponseData(400);
+                break;
+            case Body_ContentLength:
+                if (requestData.isBodyCompleteByContentLength()) {
+                    parseBodyByContentLength(requestData);
+                    return true;
+                }
+                return false;
+            case Body_TransferEncoding:
+                if (requestData.isBodyCompleteByTransferEncoding()) {
+                    long long maxBodySize = requestData.getClientMaxBodySize();
+                    if (static_cast<long long>(requestData.rawData.size()) >
+                        maxBodySize) {
+                        throw ResponseData(413);
+                    }
+                    parseBodyByTransferEncoding(requestData);
+                    return true;
+                }
+                return false;
+        }
+    }
+}
+
+void Request::parseHeader(RequestData& requestData) {
     State state;
     size_t queryStart;
     std::string token;
     std::string fieldname, fieldvalue;
-    std::string bodyHeaderName, bodyHeaderValue;
-    StrIter begin, end;
+    StrIter begin;
 
     state = RequestLineStart;
-    begin = requestMessage.begin();
-    end = requestMessage.end();
+    begin = requestData.rawData.begin();
     while (true) {
         switch (state) {
             case RequestLineStart:
@@ -160,79 +210,28 @@ void Request::parseMessage(std::string& requestMessage,
             case HeaderEnd:
                 if (RequestUtility::isCRLF(begin)) {
                     begin += 2;
-                    state = BodyStart;
+                    return;
                 } else
                     state = FieldName;
                 break;
-            case BodyStart:
-                bodyHeaderName = requestData.getBodyHeaderName();
-                if (bodyHeaderName == "content-length") {
-                    state = ContentLength;
-                } else if (bodyHeaderName == "transfer-encoding") {
-                    state = TransferEncoding;
-                } else if (bodyHeaderName == "") {
-                    state = BodyEnd;
-                } else
-                    throw ResponseData(400);
-                break;
-            case ContentLength:
-                bodyHeaderValue = requestData.header[bodyHeaderName];
-                if (RequestUtility::isNum(bodyHeaderValue)) {
-                    token = parseBodyByContentLength(std::string(begin, end),
-                                                     bodyHeaderValue);
-                    requestData.setBody(token);
-                    token.clear();
-                    state = BodyEnd;
-                } else
-                    throw ResponseData(400);
-                break;
-            case TransferEncoding:
-                bodyHeaderValue = requestData.header[bodyHeaderName];
-                if (bodyHeaderValue == "chunked") {
-                    token = parseBodyByTransferEncoding(std::string(begin, end),
-                                                        requestData.bodyHeader);
-                    requestData.setBody(token);
-                    token.clear();
-                    state = BodyEnd;
-                } else
-                    throw ResponseData(400);
-                break;
-            case BodyEnd:
-                return;
         }
     }
 }
 
-std::string Request::parseBodyByContentLength(std::string body,
-                                              std::string length) {
-    std::stringstream bodyStream(body);
+void Request::parseBodyByContentLength(RequestData& requestData) {
+    std::string length = requestData.header["content-length"];
     long long bodyLength = RequestUtility::strtonum(length);
-    // Configuration config = Configuration::getInstance();
 
-    if (bodyStream.fail()) {
-        throw ResponseData(400);
-    } else if (bodyLength < 0)
-        throw ResponseData(400);
-
-    std::string buffer(bodyLength, '\0');
-    bodyStream.read(&buffer[0], bodyLength);
-
-    if (body.size() != buffer.size()) {
-        throw ResponseData(400);
-    }
-    // if (bodyStream.gcount() != bodyLength) {
-    //     throw ResponseData(400);
-    // } // max body size 관련 처리 필요, 일단 주석처리
-    return buffer;
+    requestData.body = std::string(requestData.rawData.begin(),
+                                   requestData.rawData.begin() + bodyLength);
 }
 
-std::string Request::parseBodyByTransferEncoding(std::string body,
-                                                 Header& bodyHeader) {
+void Request::parseBodyByTransferEncoding(RequestData& requestData) {
     ChunkState state = Chunk;
     std::string buffer, chunkData, chunkSizeStr;
     std::string trailerFieldName, trailerFieldValue;
     long long chunkSizeNum;
-    StrIter begin = body.begin();
+    StrIter begin = requestData.rawData.begin();
 
     while (true) {
         switch (state) {
@@ -331,7 +330,8 @@ std::string Request::parseBodyByTransferEncoding(std::string body,
                 } else if (RequestUtility::isCRLF(begin)) {
                     trailerFieldValue =
                         RequestUtility::th_strtrim(trailerFieldValue, ' ');
-                    bodyHeader[trailerFieldName] = trailerFieldValue;
+                    requestData.bodyHeader[trailerFieldName] =
+                        trailerFieldValue;
                     trailerFieldName.clear();
                     trailerFieldValue.clear();
                     begin += 2;
@@ -356,11 +356,10 @@ std::string Request::parseBodyByTransferEncoding(std::string body,
             case TrailerEnd:
                 if (RequestUtility::isCRLF(begin)) {
                     begin += 2;
-                    return buffer;
+                    requestData.body = buffer;
                 } else
                     state = TrailerFieldName;
                 break;
         }
     }
-    return "";
 }

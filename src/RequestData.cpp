@@ -1,5 +1,7 @@
 #include "RequestData.hpp"
 
+#include "Configuration.hpp"
+
 char* my_inet_ntoa(struct in_addr in) {
     static char buffer[INET_ADDRSTRLEN];
 
@@ -12,13 +14,6 @@ char* my_inet_ntoa(struct in_addr in) {
     snprintf(buffer, sizeof(buffer), "%u.%u.%u.%u", bytes[0], bytes[1],
              bytes[2], bytes[3]);
     return buffer;
-}
-
-RequestData::RequestData(sockaddr_in serverAddr, sockaddr_in clientAddr) {
-    serverData.ip = my_inet_ntoa(serverAddr.sin_addr);
-    serverData.port = std::to_string(ntohs(serverAddr.sin_port));
-    clientData.ip = my_inet_ntoa(clientAddr.sin_addr);
-    clientData.port = std::to_string(ntohs(clientAddr.sin_port));
 }
 
 std::string RequestData::getMethod() const { return startLine.method; };
@@ -86,3 +81,45 @@ void RequestData::setBodyHeader(const std::string& key,
 }
 
 void RequestData::setBody(const std::string& body) { this->body = body; }
+
+void RequestData::setClientData(sockaddr_in client) {
+    clientData.ip = my_inet_ntoa(client.sin_addr);
+    clientData.port = std::to_string(ntohs(client.sin_port));
+}
+void RequestData::setServerData(sockaddr_in server) {
+    serverData.ip = my_inet_ntoa(server.sin_addr);
+    serverData.port = std::to_string(ntohs(server.sin_port));
+}
+
+// TEMPORARY
+void RequestData::appendData(const std::string& data) { rawData += data; }
+void RequestData::clearData() { rawData.clear(); }
+void RequestData::clearHeaderData() {
+    size_t pos = rawData.find("\r\n\r\n");
+
+    if (pos == std::string::npos) {
+        return;
+    }
+    rawData = rawData.substr(pos + 4, rawData.size() - (pos + 4));
+}
+
+bool RequestData::isHeaderComplete() {
+    return rawData.find("\r\n\r\n") != std::string::npos;
+}
+
+bool RequestData::isBodyCompleteByContentLength() {
+    return static_cast<long long>(rawData.size()) >=
+           RequestUtility::strtonum(header["content-length"]);
+}
+
+bool RequestData::isBodyCompleteByTransferEncoding() {
+    return rawData.find("\r\n\r\n") != std::string::npos;
+}
+
+long long RequestData::getClientMaxBodySize() const {
+    Configuration config = Configuration::getInstance();
+    std::string maxBodySize = config.getClientMaxBodySize(
+        serverData.ip, serverData.port, "", startLine.path);
+
+    return RequestUtility::strtonum(maxBodySize);
+}

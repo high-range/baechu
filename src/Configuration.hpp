@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <exception>
 
 struct Block {
     std::string name;
@@ -70,24 +71,21 @@ class Configuration {
     // parsing
     void parseConfigFile(const std::string& filename);
     bool parseBlock(std::ifstream& file, Block& current_block);
+
+    // get block
     Block getServerBlockWithPortAndName(const std::string& ip,
                                         const std::string& port,
                                         const std::string& server_name) const;
+    Block getLongestMatchingLocation(const Block& server,
+                                     const std::string& request_location) const;
 
     // error check
-    bool hasServerBlocks(const std::vector<Block>& blocks) const;
-    bool isValidServerBlockPlacement(const std::vector<Block>& blocks,
-                                     const std::string& upper_block) const;
     bool isServerHavePort() const;
-    bool checkMethods() const;
     bool checkErrorPage() const;
     bool isValidListen(const std::string& listen_value) const;
     bool isValidCgiPath() const;
     bool isDuplicatedHttp() const;
     bool isValidRedirect() const;
-
-    Block getLongestMatchingLocation(const Block& server,
-                                     const std::string& request_location) const;
 
     std::map<std::string, std::string> simple_directives;
     std::vector<Block> blocks;

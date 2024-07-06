@@ -8,10 +8,10 @@
 #include "Response.hpp"
 #include "Worker.hpp"
 
-void makeLog(std::string requestMessage) {
+void makeLog(std::string message, std::string type) {
     std::ofstream logFile;
     logFile.open("log.txt", std::ios::app);
-    logFile << requestMessage << std::endl;
+    logFile << type << message << std::endl;
     logFile.close();
 }
 
@@ -38,24 +38,23 @@ void showRequestData(RequestData& requestData) {
     std::cout << "Body: " << requestData.getBody() << std::endl;
 }
 
-std::string Manager::run(std::string requestMessage, RequestData requestData) {
-    try {
-        if (requestMessage.empty()) {
-            throw ResponseData(400);
-        }
+std::string Manager::run(RequestData requestData, ResponseData responseData) {
+    Worker worker = Worker(requestData);
 
-        makeLog(requestMessage);
+    showRequestData(requestData);
+    responseData = worker.redirectOrUse(responseData);
+    // makeLog(Response::messageGenerate(responseData),
+    //         "[Response]\n\n");  // TODO: Remove this line
+    return (Response::messageGenerate(responseData));
+}
 
-        Request::parseMessage(requestMessage, requestData);
+std::string Manager::run(RequestData requestData) {
+    Worker worker = Worker(requestData);
+    ResponseData responseData = worker.handleRequest();
 
-        Worker worker = Worker(requestData);
-        ResponseData responseData = worker.handleRequest();
-        responseData = worker.redirectOrUse(responseData);
-
-        makeLog(Response::messageGenerate(responseData));
-        return (Response::messageGenerate(responseData));
-    } catch (ResponseData& responseData) {
-        responseData = Worker(requestData).redirectOrUse(responseData);
-        return (Response::messageGenerate(responseData));
-    }
+    showRequestData(requestData);
+    responseData = worker.redirectOrUse(responseData);
+    // makeLog(Response::messageGenerate(responseData),
+    //         "[Response]\n\n");  // TODO: Remove this line
+    return (Response::messageGenerate(responseData));
 }
