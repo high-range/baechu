@@ -56,6 +56,10 @@ class Configuration {
     std::string getCgiPath(const std::string& ip, const std::string& port,
                            const std::string& server_name,
                            const std::string& extension) const;
+	std::string getInterpreterPath(const std::string& ip,
+								   const std::string& port,
+								   const std::string& server_name,
+								   const std::string& extension) const;
     bool isLocationHaveRedirect(const std::string& ip, const std::string& port,
                                 const std::string& server_name,
                                 const std::string& location) const;

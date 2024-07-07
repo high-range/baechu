@@ -18,6 +18,7 @@ const std::set<std::string> createValidDirectiveKeys() {
     s.insert("listen");      // syntax check O
     s.insert("root");        // syntax check O
     s.insert("index");
+	s.insert("interpreter");
     s.insert("limit_except");          // syntax check O
     s.insert("client_max_body_size");  // syntax check O
     s.insert("server_name");
@@ -64,6 +65,7 @@ const std::set<std::string> createValidLocationDirectives() {
 const std::set<std::string> createValidCgiDirectives() {
     std::set<std::string> s;
     s.insert("root");
+	s.insert("interpreter");
     return s;
 }
 

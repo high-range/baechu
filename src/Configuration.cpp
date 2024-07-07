@@ -158,7 +158,7 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
             if (separator_pos != std::string::npos) {
                 std::string key = trim(line.substr(0, separator_pos));
                 if (!isValidDirectiveKey(key)) {
-                    throw std::runtime_error("invalid directive \"" + key +
+                    throw std::runtime_error("unknown directive \"" + key +
                                              "\"");
                 }
                 std::string value = trim(line.substr(
@@ -258,7 +258,8 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
 				}
                 current_block.directives[key] = value;
             } else {
-                throw std::runtime_error("no directive in \"" + line + "\"");
+                throw std::runtime_error("invalid directive format in \"" +
+                                         line + "\"");
             }
         }
     }
@@ -782,6 +783,30 @@ std::string Configuration::getCgiPath(const std::string& ip,
                     if (server.directives.find("root") !=
                         server.directives.end()) {
                         return server.directives.at("root");
+                    }
+                }
+                break;
+            }
+        }
+    }
+    return "";
+}
+
+std::string Configuration::getInterpreterPath(const std::string& ip,
+										      const std::string& port,
+											  const std::string& server_name,
+											  const std::string& extension) const {
+	Block server = getServerBlockWithPortAndName(ip, port, server_name);
+    for (std::vector<Block>::const_iterator it = server.sub_blocks.begin();
+         it != server.sub_blocks.end(); ++it) {
+        if (it->name.substr(0, 3) == "cgi") {
+            if (it->name.substr(4) == extension) {
+                if (it->directives.find("interpreter") != it->directives.end()) {
+                    return it->directives.at("interpreter");
+                } else {
+                    if (server.directives.find("interpreter") !=
+                        server.directives.end()) {
+                        return server.directives.at("interpreter");
                     }
                 }
                 break;
