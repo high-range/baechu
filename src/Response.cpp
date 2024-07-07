@@ -1,6 +1,6 @@
 #include "Response.hpp"
 
-#include "utils/Utils.hpp"
+#include "Utils.hpp"
 
 std::string getReasonPhrase(int statusCode) {
     static std::map<int, std::string> reasonPhrases;

@@ -6,8 +6,8 @@
 #include <string>
 
 #include "Response.hpp"
+#include "Utils.hpp"
 #include "Worker.hpp"
-#include "utils/Utils.hpp"
 
 std::string lower(std::string s) {
     for (size_t i = 0; i < s.length(); i++) {

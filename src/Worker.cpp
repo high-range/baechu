@@ -14,7 +14,7 @@
 #include "Configuration.hpp"
 #include "RequestData.hpp"
 #include "Response.hpp"
-#include "utils/Utils.hpp"
+#include "Utils.hpp"
 
 void Worker::setPath(const std::string& path) {
     this->path = path;

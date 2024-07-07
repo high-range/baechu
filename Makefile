@@ -5,7 +5,7 @@ AR			= ar
 ARFLAGS		= rs
 ARFILE		= webserv.a
 
-INCLUDES_HEADER  = -I src
+INCLUDES_HEADER  = -Iinclude
 
 SRCS		= src/ConfigHelper.cpp \
 				src/Configuration.cpp \
@@ -18,7 +18,7 @@ SRCS		= src/ConfigHelper.cpp \
 				src/ResponseData.cpp \
 				src/Worker.cpp \
 				src/WorkerUtils.cpp \
-				src/utils/Utils.cpp \
+				src/Utils.cpp \
 
 MAIN		= main.cpp
 

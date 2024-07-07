@@ -1,7 +1,7 @@
 #include "RequestData.hpp"
 
 #include "Configuration.hpp"
-#include "utils/Utils.hpp"
+#include "Utils.hpp"
 
 char* my_inet_ntoa(struct in_addr in) {
     static char buffer[INET_ADDRSTRLEN];
