@@ -61,4 +61,5 @@ class Worker {
     ResponseData handleDynamicRequest();
     CgiEnvMap createCgiEnvMap();
     std::string runCgi();
+    std::string loadErrorPage(int statusCode, const std::string& errorPagePath);
 };
