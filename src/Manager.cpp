@@ -41,7 +41,7 @@ void showRequestData(RequestData& requestData) {
 std::string Manager::run(RequestData requestData, ResponseData responseData) {
     Worker worker = Worker(requestData);
 
-    showRequestData(requestData);
+    // showRequestData(requestData);
     responseData = worker.redirectOrUse(responseData);
     // makeLog(Response::messageGenerate(responseData),
     //         "[Response]\n\n");  // TODO: Remove this line
@@ -52,7 +52,7 @@ std::string Manager::run(RequestData requestData) {
     Worker worker = Worker(requestData);
     ResponseData responseData = worker.handleRequest();
 
-    showRequestData(requestData);
+    // showRequestData(requestData);
     responseData = worker.redirectOrUse(responseData);
     // makeLog(Response::messageGenerate(responseData),
     //         "[Response]\n\n");  // TODO: Remove this line
