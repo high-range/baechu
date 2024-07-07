@@ -38,11 +38,12 @@ void showRequestData(RequestData& requestData) {
     std::cout << "Body: " << requestData.getBody() << std::endl;
 }
 
+// TODO : Remove 주석 처리된 코드
 std::string Manager::run(RequestData requestData, ResponseData responseData) {
     Worker worker = Worker(requestData);
 
-    showRequestData(requestData);
-    responseData = worker.redirectOrUse(responseData);
+    // showRequestData(requestData);
+    responseData = worker.resolveErrorPage(responseData);
     // makeLog(Response::messageGenerate(responseData),
     //         "[Response]\n\n");  // TODO: Remove this line
     return (Response::messageGenerate(responseData));
@@ -52,8 +53,8 @@ std::string Manager::run(RequestData requestData) {
     Worker worker = Worker(requestData);
     ResponseData responseData = worker.handleRequest();
 
-    showRequestData(requestData);
-    responseData = worker.redirectOrUse(responseData);
+    // showRequestData(requestData);
+    responseData = worker.resolveErrorPage(responseData);
     // makeLog(Response::messageGenerate(responseData),
     //         "[Response]\n\n");  // TODO: Remove this line
     return (Response::messageGenerate(responseData));
