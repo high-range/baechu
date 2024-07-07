@@ -136,7 +136,7 @@ ResponseData Worker::doGetFile() {
 
 ResponseData Worker::doGetDirectory() {
     DIR* dir = opendir(fullPath.c_str());
-    if (dir == nullptr) {
+    if (dir == NULL) {
         return ResponseData(403);
     }
 
@@ -322,11 +322,13 @@ ResponseData Worker::handleDynamicRequest() {
         .withReasonPhrase(reasonPhrase);
 }
 
-char** makeArgs(std::string scriptPath) {
-    char** args = new char*[2];  // 배열 크기를 2로 설정 (스크립트 경로와 NULL)
-    args[0] = new char[scriptPath.size() + 1];
-    std::strcpy(args[0], scriptPath.c_str());
-    args[1] = NULL;
+char** makeArgs(const std::string& exePath, const std::string& scriptName) {
+    char** args = new char*[3];
+    args[0] = new char[exePath.size() + 1];
+    std::strcpy(args[0], exePath.c_str());
+    args[1] = new char[scriptName.size() + 1];
+    std::strcpy(args[1], scriptName.c_str());
+    args[2] = NULL;
     return args;
 }
 
@@ -343,6 +345,11 @@ char** makeEnvp(CgiEnvMap& envMap) {
     envp[i] = NULL;
 
     return envp;
+}
+
+bool isExecutable(const std::string& path) {
+    struct stat sb;
+    return (stat(path.c_str(), &sb) == 0 && sb.st_mode & S_IXUSR);
 }
 
 std::string Worker::runCgi() {
@@ -366,9 +373,14 @@ std::string Worker::runCgi() {
 
         CgiEnvMap envMap = createCgiEnvMap();
         char** envp = makeEnvp(envMap);
-        char** args = makeArgs(fullPath);
+        char** args = makeArgs(exePath, fullPath);
 
-        execve(fullPath.c_str(), args, envp);
+        if (!isExecutable(exePath)) {
+            std::cerr << "Not an executable file" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        execve(exePath.c_str(), args, envp);
 
         exit(EXIT_FAILURE);
     }
@@ -432,6 +444,7 @@ ResponseData Worker::handleRequest() {
                 std::string cgiPath =
                     config.getCgiPath(ip, port, serverName, ext);
                 fullPath = cgiPath + scriptName;
+                exePath = config.getInterpreterPath(ip, port, serverName, ext);
                 break;
             }
         }

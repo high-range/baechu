@@ -38,8 +38,11 @@ class Worker {
     std::string fullPath;
 
     bool isStatic;
+
+    // used for dynamic request
     std::string pathInfo;
     std::string scriptName;
+    std::string exePath;  // ex) /usr/bin/python3
 
     Worker redirectedTo(const std::string& path);
 
