@@ -14,23 +14,7 @@
 #include "Configuration.hpp"
 #include "RequestData.hpp"
 #include "Response.hpp"
-
-static std::string lower(std::string s) {
-    for (size_t i = 0; i < s.length(); i++) {
-        if (isupper(s[i])) {
-            s[i] = tolower(s[i]);
-        }
-    }
-    return s;
-}
-
-static std::string getServerName(std::string host) {
-    size_t colonPos = host.find(':');
-    if (colonPos == std::string::npos) {
-        return host;
-    }
-    return host.substr(0, colonPos);
-}
+#include "utils/Utils.hpp"
 
 void Worker::setPath(const std::string& path) {
     this->path = path;
@@ -177,7 +161,7 @@ ResponseData Worker::doGet() {
 
     struct stat buf;
     if (stat(fullPath.c_str(), &buf) != 0) {
-        std::cout << "File not found, fullPath: " << fullPath << std::endl;
+        std::cout << "File not found" << std::endl;
         return ResponseData(404);
     }
 
@@ -322,36 +306,6 @@ ResponseData Worker::handleDynamicRequest() {
         .withReasonPhrase(reasonPhrase);
 }
 
-char** makeArgs(const std::string& exePath, const std::string& scriptName) {
-    char** args = new char*[3];
-    args[0] = new char[exePath.size() + 1];
-    std::strcpy(args[0], exePath.c_str());
-    args[1] = new char[scriptName.size() + 1];
-    std::strcpy(args[1], scriptName.c_str());
-    args[2] = NULL;
-    return args;
-}
-
-char** makeEnvp(CgiEnvMap& envMap) {
-    char** envp = new char*[envMap.size() + 1];
-
-    int i = 0;
-    for (CgiEnvMap::iterator it = envMap.begin(); it != envMap.end(); it++) {
-        std::string env = it->first + "=" + it->second;
-        envp[i] = new char[env.size() + 1];
-        std::strcpy(envp[i], env.c_str());
-        i++;
-    }
-    envp[i] = NULL;
-
-    return envp;
-}
-
-bool isExecutable(const std::string& path) {
-    struct stat sb;
-    return (stat(path.c_str(), &sb) == 0 && sb.st_mode & S_IXUSR);
-}
-
 std::string Worker::runCgi() {
     int fds[2];
     if (pipe(fds) == -1) {
@@ -456,64 +410,21 @@ ResponseData Worker::handleRequest() {
     return handleDynamicRequest();
 }
 
-Worker Worker::redirectedTo(const std::string& path) {
-    method = GET;
-    setPath(path);
-    isStatic = true;
-    return *this;
-}
-
-std::string to_string(int value) {
-    std::ostringstream oss;
-    oss << value;
-    return oss.str();
-}
-
-ResponseData Worker::redirectOrUse(ResponseData& response) {
+ResponseData Worker::resolveErrorPage(ResponseData& response) {
     Configuration& config = Configuration::getInstance();
 
     std::string errorPage = config.getErrorPageFromServer(
         ip, port, serverName, to_string(response.statusCode));
-    if (!errorPage.empty()) {
-        std::string errorPagePath =
-            "/Users/leesiha/42/baechu/defence/default_error_page.html";
 
+    if (!errorPage.empty()) {
+        std::string errorPagePath = getFullPath(errorPage);
         std::string errorPageContent =
             loadErrorPage(response.statusCode, errorPagePath);
-        if (!errorPageContent.empty()) {
-            Headers headers;
-            headers[CONTENT_TYPE_HEADER] = "text/html; charset=utf-8";
-
-            return ResponseData(response.statusCode, headers, errorPageContent);
-        }
+        return ResponseData(response.statusCode, errorPageContent);
+    } else if (response.statusCode >= 400 && response.statusCode <= 599) {
+        return ResponseData(response.statusCode,
+                            loadErrorPage(response.statusCode, ""));
     }
 
     return response;
-}
-
-std::string Worker::loadErrorPage(int statusCode,
-                                  const std::string& errorPagePath) {
-    std::ifstream errorFile(errorPagePath.c_str());
-    if (!errorFile.is_open()) {
-        return "";
-    }
-
-    std::ostringstream ss;
-    ss << errorFile.rdbuf();
-    std::string errorPageContent = ss.str();
-    errorFile.close();
-
-    std::string statusCodeStr = to_string(statusCode);
-    std::string errorMessage = getReasonPhrase(statusCode);
-
-    size_t pos = errorPageContent.find("{status_code}");
-    if (pos != std::string::npos) {
-        errorPageContent.replace(pos, 13, statusCodeStr);
-    }
-    pos = errorPageContent.find("{error_message}");
-    if (pos != std::string::npos) {
-        errorPageContent.replace(pos, 15, errorMessage);
-    }
-
-    return errorPageContent;
 }

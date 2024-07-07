@@ -23,7 +23,7 @@ class Worker {
     Worker(const RequestData& request);
 
     ResponseData handleRequest();
-    ResponseData redirectOrUse(ResponseData& response);
+    ResponseData resolveErrorPage(ResponseData& response);
 
   private:
     const RequestData& request;
@@ -31,35 +31,35 @@ class Worker {
     std::string ip;
     std::string port;
     std::string serverName;
-
     std::string method;
     std::string path;
     std::string location;
     std::string fullPath;
-
-    bool isStatic;
-
-    // used for dynamic request
+    // used for dynamic request only
     std::string pathInfo;
     std::string scriptName;
     std::string exePath;  // ex) /usr/bin/python3
 
-    Worker redirectedTo(const std::string& path);
-
     void setPath(const std::string& path);
+    std::string getFullPath(const std::string& path);
 
+    bool isStatic;
     ResponseData handleStaticRequest();
-
+    ResponseData handleDynamicRequest();
+    // used in handleStaticRequest
     ResponseData doGetFile();
     ResponseData doGetDirectory();
     ResponseData doGet();
     ResponseData doPost();
     ResponseData doDelete();
-
-    std::string getFullPath(const std::string& path);
-
-    ResponseData handleDynamicRequest();
+    // used in handleDynamicRequest
     CgiEnvMap createCgiEnvMap();
     std::string runCgi();
-    std::string loadErrorPage(int statusCode, const std::string& errorPagePath);
 };
+
+std::string lower(std::string s);
+std::string getServerName(std::string host);
+char** makeArgs(const std::string& exePath, const std::string& scriptName);
+char** makeEnvp(CgiEnvMap& envMap);
+bool isExecutable(const std::string& path);
+std::string loadErrorPage(int statusCode, const std::string errorPagePath);
