@@ -779,11 +779,6 @@ std::string Configuration::getCgiPath(const std::string& ip,
             if (it->name.substr(4) == extension) {
                 if (it->directives.find("root") != it->directives.end()) {
                     return it->directives.at("root");
-                } else {
-                    if (server.directives.find("root") !=
-                        server.directives.end()) {
-                        return server.directives.at("root");
-                    }
                 }
                 break;
             }
@@ -803,11 +798,6 @@ std::string Configuration::getInterpreterPath(const std::string& ip,
             if (it->name.substr(4) == extension) {
                 if (it->directives.find("interpreter") != it->directives.end()) {
                     return it->directives.at("interpreter");
-                } else {
-                    if (server.directives.find("interpreter") !=
-                        server.directives.end()) {
-                        return server.directives.at("interpreter");
-                    }
                 }
                 break;
             }

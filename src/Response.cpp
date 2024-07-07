@@ -1,6 +1,6 @@
 #include "Response.hpp"
 
-static std::string getReasonPhrase(int statusCode) {
+std::string getReasonPhrase(int statusCode) {
     static std::map<int, std::string> reasonPhrases;
     if (reasonPhrases.empty()) {
         // 1xx Informational

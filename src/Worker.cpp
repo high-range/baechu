@@ -468,9 +468,104 @@ ResponseData Worker::redirectOrUse(ResponseData& response) {
 
     std::string errorPage = config.getErrorPageFromServer(
         ip, port, serverName, std::to_string(response.statusCode));
+
+	// errorPath 설정
+	char cwd[PATH_MAX];
+	std::string errorPagePath;
+	if (getcwd(cwd, sizeof(cwd)) != NULL) {
+		// 현재 dir 설정
+		std::string currentDir(cwd);
+		errorPagePath = currentDir + "/defence/";
+	}
+	else {
+		// getcwd실패 : 내부 시스템 오류 (500 error)
+		// local 환경에 맞게 errorPagePath 설정해야함.
+		response.statusCode = 500;
+		errorPagePath = "/Users/superstar/Desktop/baechu/defence/";
+	}
+
+	// errorPage가 empty인지, 유효한 파일인지 체크
     if (!errorPage.empty()) {
+		errorPagePath += errorPage;
+        std::ifstream testFile(errorPagePath);
+        if (testFile.is_open()) {
+            testFile.close();
+            return redirectedTo(errorPage).handleRequest();
+        }
+    }
+	if (response.statusCode >= 400 && response.statusCode <= 599) {
+        errorPage = "/default_error_page.html";
+		errorPagePath += errorPage;
+
+		// 에러 메시지 설정
+		std::string errorMsg = getReasonPhrase(response.statusCode);
+
+        // 상태 코드와 메시지를 작성할 파일 열기
+        std::ofstream outFile(errorPagePath);
+        if (outFile.is_open()) {
+            outFile << "<!DOCTYPE html>\n";
+            outFile << "<html lang=\"ko\">\n";
+            outFile << "<head>\n";
+            outFile << "    <meta charset=\"UTF-8\">\n";
+            outFile << "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
+            outFile << "    <title>" << response.statusCode << " - Error</title>\n";
+            outFile << "    <style>\n";
+            outFile << "        body {\n";
+            outFile << "            background-color: #f2f2f2;\n";
+            outFile << "            font-family: Arial, sans-serif;\n";
+            outFile << "            display: flex;\n";
+            outFile << "            justify-content: center;\n";
+            outFile << "            align-items: center;\n";
+            outFile << "            height: 100vh;\n";
+            outFile << "            margin: 0;\n";
+            outFile << "        }\n";
+            outFile << "        .container {\n";
+            outFile << "            text-align: center;\n";
+            outFile << "            background-color: #ffffff;\n";
+            outFile << "            padding: 30px;\n";
+            outFile << "            border-radius: 10px;\n";
+            outFile << "            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);\n";
+            outFile << "        }\n";
+            outFile << "        h1 {\n";
+            outFile << "            font-size: 96px;\n";
+            outFile << "            margin: 0;\n";
+            outFile << "            color: #ff6f61;\n";
+            outFile << "        }\n";
+            outFile << "        p {\n";
+            outFile << "            font-size: 18px;\n";
+            outFile << "            margin: 10px 0;\n";
+            outFile << "            color: #333;\n";
+            outFile << "        }\n";
+            outFile << "        .btn {\n";
+            outFile << "            display: inline-block;\n";
+            outFile << "            margin-top: 20px;\n";
+            outFile << "            padding: 10px 20px;\n";
+            outFile << "            font-size: 16px;\n";
+            outFile << "            color: #fff;\n";
+            outFile << "            background-color: #ff6f61;\n";
+            outFile << "            text-decoration: none;\n";
+            outFile << "            border-radius: 5px;\n";
+            outFile << "            transition: background-color 0.3s ease;\n";
+            outFile << "        }\n";
+            outFile << "        .btn:hover {\n";
+            outFile << "            background-color: #ff3b2f;\n";
+            outFile << "        }\n";
+            outFile << "    </style>\n";
+            outFile << "</head>\n";
+            outFile << "<body>\n";
+            outFile << "    <div class=\"container\">\n";
+            outFile << "        <h1>" << response.statusCode << "</h1>\n";
+            outFile << "        <p>" << errorMsg << "</p>\n";
+            outFile << "        <a href=\"/\" class=\"btn\">홈으로 돌아가기</a>\n";
+            outFile << "    </div>\n";
+            outFile << "</body>\n";
+            outFile << "</html>\n";
+            outFile.close();
+        }
+
         return redirectedTo(errorPage).handleRequest();
     }
 
     return response;
 }
+
