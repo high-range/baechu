@@ -1,0 +1,97 @@
+#include <sys/stat.h>
+
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
+
+#include "Response.hpp"
+#include "Worker.hpp"
+#include "utils/Utils.hpp"
+
+std::string lower(std::string s) {
+    for (size_t i = 0; i < s.length(); i++) {
+        if (isupper(s[i])) {
+            s[i] = tolower(s[i]);
+        }
+    }
+    return s;
+}
+
+std::string getServerName(std::string host) {
+    size_t colonPos = host.find(':');
+    if (colonPos == std::string::npos) {
+        return host;
+    }
+    return host.substr(0, colonPos);
+}
+
+char** makeArgs(const std::string& exePath, const std::string& scriptName) {
+    char** args = new char*[3];
+    args[0] = new char[exePath.size() + 1];
+    std::strcpy(args[0], exePath.c_str());
+    args[1] = new char[scriptName.size() + 1];
+    std::strcpy(args[1], scriptName.c_str());
+    args[2] = NULL;
+    return args;
+}
+
+char** makeEnvp(CgiEnvMap& envMap) {
+    char** envp = new char*[envMap.size() + 1];
+
+    int i = 0;
+    for (CgiEnvMap::iterator it = envMap.begin(); it != envMap.end(); it++) {
+        std::string env = it->first + "=" + it->second;
+        envp[i] = new char[env.size() + 1];
+        std::strcpy(envp[i], env.c_str());
+        i++;
+    }
+    envp[i] = NULL;
+
+    return envp;
+}
+
+bool isExecutable(const std::string& path) {
+    struct stat sb;
+    return (stat(path.c_str(), &sb) == 0 && sb.st_mode & S_IXUSR);
+}
+
+bool isReadableFile(const std::string& path) {
+    struct stat sb;
+    return (stat(path.c_str(), &sb) == 0 && sb.st_mode & S_IRUSR);
+}
+
+std::string loadErrorPage(int statusCode, std::string errorPagePath) {
+    bool isDefaultErrorPage = false;
+    if (isReadableFile(errorPagePath) == false) {
+        errorPagePath =
+            "/Users/leesiha/42/baechu/defence/default_error_page.html";
+        isDefaultErrorPage = true;
+    }
+
+    std::ifstream errorFile(errorPagePath.c_str());
+    if (!errorFile.is_open()) {
+        std::cerr << "Error: cannot open error page file" << std::endl;
+        return "";
+    }
+
+    std::ostringstream ss;
+    ss << errorFile.rdbuf();
+    std::string errorPageContent = ss.str();
+    errorFile.close();
+
+    if (isDefaultErrorPage) {
+        std::string statusCodeStr = to_string(statusCode);
+        std::string errorMessage = getReasonPhrase(statusCode);
+
+        size_t pos = errorPageContent.find("{status_code}");
+        if (pos != std::string::npos) {
+            errorPageContent.replace(pos, 13, statusCodeStr);
+        }
+        pos = errorPageContent.find("{error_message}");
+        if (pos != std::string::npos) {
+            errorPageContent.replace(pos, 15, errorMessage);
+        }
+    }
+    return errorPageContent;
+}
