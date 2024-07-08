@@ -1,35 +1,119 @@
+.container #app {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 20px;
+}
+
+section {
+    flex: 1;
+    margin: 10px;
+    min-width: 300px;
+}
+
+.test-section {
+    margin-bottom: 20px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.test-section h4 {
+    margin-bottom: 10px;
+    font-size: 20px;
+}
+
+.test-section button {
+    margin-top: 10px;
+}
+
+button {
+    padding: 10px 15px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#click-result {
+    font-size: 24px;
+    font-weight: bold;
+    color: #007BFF;
+    margin-top: 10px;
+}
+
 .calculator {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 5px; /* 간격을 줄입니다 */
-    padding: 10px; /* 패딩을 줄입니다 */
-    background: #333;
-    border-radius: 10px;
-    max-width: 300px; /* 최대 너비를 설정합니다 */
-    margin: 0 auto; /* 중앙 정렬 */
+    gap: 5px;
+    padding: 20px;
+    background: #384b42;
+    /* Updated background color */
+    border-radius: 20px;
+    max-width: 260px;
+    margin: 0 auto;
 }
-.calculator input,
-.calculator button {
-    font-size: 1.5em; /* 폰트 크기를 줄입니다 */
-    padding: 10px; /* 패딩을 줄입니다 */
-    border: none;
-    border-radius: 5px;
-    background: #666;
-    color: white;
-    text-align: center;
-}
+
 .calculator input {
     grid-column: span 4;
-    background: #444;
+    background: #596b60;
+    /* Updated background color */
+    color: white;
+    font-size: 2.5em;
+    padding: 20px;
+    text-align: right;
+    border: none;
+    border-radius: 10px;
 }
+
+.calculator button {
+    font-size: 1.5em;
+    padding: 15px;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    text-align: center;
+    background: #7a8f80;
+    /* Updated background color */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .calculator .operator {
-    background: #f5923e;
+    background: #f09a36;
+    color: white;
 }
+
 .calculator .equals {
-    grid-column: span 2;
-    background: #f5923e;
+    background: #f09a36;
+    color: white;
+    grid-column: span 1;
 }
+
 .calculator .clear {
+    background: #9b5342;
+    /* Updated background color */
+    color: white;
+    grid-column: span 1;
+}
+
+.calculator .zero {
     grid-column: span 2;
-    background: #ac3939;
+    background: #7a8f80;
+    /* Updated background color */
+    color: white;
 }

@@ -8,9 +8,13 @@ function setupClickCounter() {
         clickButton.addEventListener('click', function () {
             console.log('Clicking the button');
             fetch('/click_counter.py')
-                .then(response => response.text())
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    return response.text();
+                })
                 .then(data => {
                     clickResult.innerHTML = data;
+                    console.log('Click counter response data:', data);
                 })
                 .catch(error => console.error('Error:', error));
         });
@@ -23,9 +27,13 @@ function setupClickCounter() {
         resetButton.addEventListener('click', function () {
             console.log('Resetting the counter');
             fetch('/reset_counter.py', { method: 'POST' })
-                .then(response => response.text())
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    return response.text();
+                })
                 .then(data => {
                     clickResult.innerHTML = '0';
+                    console.log('Reset counter response data:', data);
                 })
                 .catch(error => console.error('Error:', error));
         });
@@ -34,10 +42,13 @@ function setupClickCounter() {
     }
 }
 
+document.addEventListener('DOMContentLoaded', (event) => {
+    setupClickCounter();
+});
+
 function setupCalculator() {
     const display = document.getElementById('calc-display');
     const buttons = document.querySelectorAll('.calculator button');
-    const calculationResult = document.getElementById('calculation-result');
     let currentValue = '0';
     let operator = null;
     let firstValue = null;
@@ -52,29 +63,29 @@ function setupCalculator() {
                 firstValue = null;
                 secondValue = false;
                 operator = null;
+                display.value = currentValue;
             } else if (value === '±') {
                 currentValue = (parseFloat(currentValue) * -1).toString();
+                display.value = currentValue;
             } else if (value === '%') {
                 currentValue = (parseFloat(currentValue) / 100).toString();
+                display.value = currentValue;
             } else if (value === '÷' || value === '×' || value === '−' || value === '+') {
                 if (firstValue === null) {
                     firstValue = parseFloat(currentValue);
                 } else if (operator) {
-                    const result = performCalculation(firstValue, parseFloat(currentValue), operator);
-                    currentValue = result.toString();
-                    firstValue = result;
+                    calculateResult();
                 }
                 operator = value;
                 secondValue = true;
             } else if (value === '.') {
                 if (!currentValue.includes('.')) {
                     currentValue += '.';
+                    display.value = currentValue;
                 }
             } else if (value === '=') {
                 if (operator && firstValue !== null) {
-                    const result = performCalculation(firstValue, parseFloat(currentValue), operator);
-                    currentValue = result.toString();
-                    firstValue = null;
+                    calculateResult();
                     operator = null;
                     secondValue = false;
                 }
@@ -85,23 +96,41 @@ function setupCalculator() {
                 } else {
                     currentValue = currentValue === '0' ? value : currentValue + value;
                 }
+                display.value = currentValue;
             }
-
-            display.value = currentValue;
         });
     });
 
-    function performCalculation(first, second, operator) {
-        switch (operator) {
-            case '÷':
-                return first / second;
-            case '×':
-                return first * second;
-            case '−':
-                return first - second;
-            case '+':
-                return first + second;
-        }
+    function calculateResult() {
+        const secondValue = parseFloat(currentValue);
+        let operatorSymbol = operator;
+        if (operatorSymbol === '÷') operatorSymbol = '/';
+        if (operatorSymbol === '×') operatorSymbol = '*';
+        if (operatorSymbol === '−') operatorSymbol = '-';
+
+        const query = `first_value=${encodeURIComponent(firstValue)}&second_value=${encodeURIComponent(secondValue)}&operator=${encodeURIComponent(operatorSymbol)}`;
+
+        fetch(`/calculator.py?${query}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Network response was not ok");
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    console.error('Error:', data.error);
+                    display.value = 'NaN';
+                } else {
+                    currentValue = data.result.toString();
+                    display.value = currentValue;
+                    firstValue = parseFloat(currentValue);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                display.value = 'NaN';
+            });
     }
 }
 

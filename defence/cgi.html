@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,20 +10,23 @@
     <link rel="stylesheet" href="cgi.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
-    <div class="container">
-        <header>
+    <header>
+        <div class="container">
             <h1>Click Counter and Calculator using CGI</h1>
             <p>Click the button to increase the count or reset to start from zero.</p>
-        </header>
-        <main>
+        </div>
+    </header>
+    <main>
+        <div class="container" id="app">
             <section>
                 <h2>Counter</h2>
                 <div class="test-section">
                     <h4>Click the button</h4>
+                    <div id="click-result">0</div>
                     <button id="click-button">Click me!</button>
                     <button id="reset-button">Reset</button>
-                    <div id="click-result">0</div>
                 </div>
             </section>
             <section>
@@ -45,13 +49,27 @@
                     <button>2</button>
                     <button>3</button>
                     <button class="operator">+</button>
-                    <button>0</button>
+                    <button class="zero">0</button>
                     <button>.</button>
                     <button class="equals">=</button>
                 </div>
                 <div id="calculation-result"></div>
             </section>
-        </main>
-    </div>
+            <section>
+                <h2>Sign Guestbook</h2>
+                <div class="test-section">
+                    <h4>Leave your message and upload an image</h4>
+                    <form id="guestbook-form" enctype="multipart/form-data" method="post" action="/guestbook.py">
+                        <input type="text" name="name" placeholder="Your name" required>
+                        <textarea name="message" rows="4" cols="50" placeholder="Your message" required></textarea>
+                        <input type="file" name="image" accept="image/*" required>
+                        <button type="submit">Submit</button>
+                    </form>
+                    <div id="guestbook-result"></div>
+                </div>
+            </section>
+        </div>
+    </main>
 </body>
+
 </html>
