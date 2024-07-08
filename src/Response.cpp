@@ -1,6 +1,8 @@
 #include "Response.hpp"
 
-static std::string getReasonPhrase(int statusCode) {
+#include "Utils.hpp"
+
+std::string getReasonPhrase(int statusCode) {
     static std::map<int, std::string> reasonPhrases;
     if (reasonPhrases.empty()) {
         // 1xx Informational
@@ -105,7 +107,7 @@ std::string Response::messageGenerate(ResponseData data) {
     ss << "\r\n";
 
     Headers headers = data.headers;
-    headers["content-length"] = std::to_string(data.body.length());
+    headers["content-length"] = to_string(data.body.length());
 
     for (Headers::iterator it = headers.begin(); it != headers.end(); it++) {
         ss << camel(it->first) << ": " << it->second << "\r\n";

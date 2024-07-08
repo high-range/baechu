@@ -14,23 +14,7 @@
 #include "Configuration.hpp"
 #include "RequestData.hpp"
 #include "Response.hpp"
-
-static std::string lower(std::string s) {
-    for (size_t i = 0; i < s.length(); i++) {
-        if (isupper(s[i])) {
-            s[i] = tolower(s[i]);
-        }
-    }
-    return s;
-}
-
-static std::string getServerName(std::string host) {
-    size_t colonPos = host.find(':');
-    if (colonPos == std::string::npos) {
-        return host;
-    }
-    return host.substr(0, colonPos);
-}
+#include "Utils.hpp"
 
 void Worker::setPath(const std::string& path) {
     this->path = path;
@@ -55,10 +39,6 @@ std::string Worker::getFullPath(const std::string& path) {
     if (root.back() == '/') {
         root.pop_back();
     }
-
-    std::cout << "root: " << root << std::endl;
-    std::cout << "path: " << path << std::endl;
-    std::cout << "fullPath: " << root + path << std::endl;
     return root + path;
 }
 
@@ -136,7 +116,7 @@ ResponseData Worker::doGetFile() {
 
 ResponseData Worker::doGetDirectory() {
     DIR* dir = opendir(fullPath.c_str());
-    if (dir == nullptr) {
+    if (dir == NULL) {
         return ResponseData(403);
     }
 
@@ -177,7 +157,7 @@ ResponseData Worker::doGet() {
 
     struct stat buf;
     if (stat(fullPath.c_str(), &buf) != 0) {
-        std::cout << "File not found, fullPath: " << fullPath << std::endl;
+        std::cout << "File not found" << std::endl;
         return ResponseData(404);
     }
 
@@ -322,29 +302,6 @@ ResponseData Worker::handleDynamicRequest() {
         .withReasonPhrase(reasonPhrase);
 }
 
-char** makeArgs(std::string scriptPath) {
-    char** args = new char*[2];  // 배열 크기를 2로 설정 (스크립트 경로와 NULL)
-    args[0] = new char[scriptPath.size() + 1];
-    std::strcpy(args[0], scriptPath.c_str());
-    args[1] = NULL;
-    return args;
-}
-
-char** makeEnvp(CgiEnvMap& envMap) {
-    char** envp = new char*[envMap.size() + 1];
-
-    int i = 0;
-    for (CgiEnvMap::iterator it = envMap.begin(); it != envMap.end(); it++) {
-        std::string env = it->first + "=" + it->second;
-        envp[i] = new char[env.size() + 1];
-        std::strcpy(envp[i], env.c_str());
-        i++;
-    }
-    envp[i] = NULL;
-
-    return envp;
-}
-
 std::string Worker::runCgi() {
     int fds[2];
     if (pipe(fds) == -1) {
@@ -366,9 +323,14 @@ std::string Worker::runCgi() {
 
         CgiEnvMap envMap = createCgiEnvMap();
         char** envp = makeEnvp(envMap);
-        char** args = makeArgs(fullPath);
+        char** args = makeArgs(exePath, fullPath);
 
-        execve(fullPath.c_str(), args, envp);
+        if (!isExecutable(exePath)) {
+            std::cerr << "Not an executable file" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        execve(exePath.c_str(), args, envp);
 
         exit(EXIT_FAILURE);
     }
@@ -432,6 +394,7 @@ ResponseData Worker::handleRequest() {
                 std::string cgiPath =
                     config.getCgiPath(ip, port, serverName, ext);
                 fullPath = cgiPath + scriptName;
+                exePath = config.getInterpreterPath(ip, port, serverName, ext);
                 break;
             }
         }
@@ -443,20 +406,22 @@ ResponseData Worker::handleRequest() {
     return handleDynamicRequest();
 }
 
-Worker Worker::redirectedTo(const std::string& path) {
-    method = GET;
-    setPath(path);
-    isStatic = true;
-    return *this;
-}
-
-ResponseData Worker::redirectOrUse(ResponseData& response) {
+ResponseData Worker::resolveErrorPage(ResponseData& response) {
     Configuration& config = Configuration::getInstance();
 
     std::string errorPage = config.getErrorPageFromServer(
-        ip, port, serverName, std::to_string(response.statusCode));
+        ip, port, serverName, to_string(response.statusCode));
+
     if (!errorPage.empty()) {
-        return redirectedTo(errorPage).handleRequest();
+        std::string errorPagePath = getFullPath(errorPage);
+        std::string errorPageContent =
+            loadErrorPage(response.statusCode, errorPagePath);
+        if (errorPageContent.empty()) return ResponseData(500);
+        return ResponseData(response.statusCode, errorPageContent);
+    } else if (response.statusCode >= 400 && response.statusCode <= 599) {
+        std::string errorPageContent = loadErrorPage(response.statusCode, "");
+        if (errorPageContent.empty()) return ResponseData(500);
+        return ResponseData(response.statusCode, errorPageContent);
     }
 
     return response;

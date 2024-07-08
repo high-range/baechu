@@ -158,7 +158,7 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
             if (separator_pos != std::string::npos) {
                 std::string key = trim(line.substr(0, separator_pos));
                 if (!isValidDirectiveKey(key)) {
-                    throw std::runtime_error("invalid directive \"" + key +
+                    throw std::runtime_error("unknown directive \"" + key +
                                              "\"");
                 }
                 std::string value = trim(line.substr(
@@ -252,13 +252,16 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
                                                  value + "\"");
                     }
                 } else if (key == "autoindex") {
-					if (value != "on" && value != "off") {
-						throw std::runtime_error("directive \"autoindex\" must be \"on\" or \"off\"");
-					}
-				}
+                    if (value != "on" && value != "off") {
+                        throw std::runtime_error(
+                            "directive \"autoindex\" must be \"on\" or "
+                            "\"off\"");
+                    }
+                }
                 current_block.directives[key] = value;
             } else {
-                throw std::runtime_error("no directive in \"" + line + "\"");
+                throw std::runtime_error("invalid directive format in \"" +
+                                         line + "\"");
             }
         }
     }
@@ -722,11 +725,18 @@ std::string Configuration::getErrorPageFromServer(
     }
 
     if (server.directives.find("error_page") != server.directives.end()) {
-        std::string errors = server.directives.at("error_page");
-        if (errors.find(status_code) != std::string::npos) {
-            size_t last_space_pos = errors.rfind(' ');
-            std::string path = errors.substr(last_space_pos + 1);
-            return path;
+        std::string value = server.directives.at("error_page");
+        size_t last_space_pos = value.rfind(' ');
+
+        std::string path = value.substr(last_space_pos + 1);
+        std::string errors = value.substr(0, last_space_pos);
+
+        std::stringstream ss(errors);
+        std::string code;
+        while (ss >> code) {
+            if (code == status_code) {
+                return path;
+            }
         }
     }
     return "";
@@ -778,11 +788,25 @@ std::string Configuration::getCgiPath(const std::string& ip,
             if (it->name.substr(4) == extension) {
                 if (it->directives.find("root") != it->directives.end()) {
                     return it->directives.at("root");
-                } else {
-                    if (server.directives.find("root") !=
-                        server.directives.end()) {
-                        return server.directives.at("root");
-                    }
+                }
+                break;
+            }
+        }
+    }
+    return "";
+}
+
+std::string Configuration::getInterpreterPath(
+    const std::string& ip, const std::string& port,
+    const std::string& server_name, const std::string& extension) const {
+    Block server = getServerBlockWithPortAndName(ip, port, server_name);
+    for (std::vector<Block>::const_iterator it = server.sub_blocks.begin();
+         it != server.sub_blocks.end(); ++it) {
+        if (it->name.substr(0, 3) == "cgi") {
+            if (it->name.substr(4) == extension) {
+                if (it->directives.find("interpreter") !=
+                    it->directives.end()) {
+                    return it->directives.at("interpreter");
                 }
                 break;
             }

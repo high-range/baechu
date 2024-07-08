@@ -15,6 +15,7 @@ class ResponseData {
 
     ResponseData(int statusCode, Headers headers, std::string body);
     ResponseData(int statusCode, Headers headers);
+    ResponseData(int statusCode, std::string body);
     ResponseData(int statusCode);
     ResponseData withReasonPhrase(std::string reasonPhrase);
 };

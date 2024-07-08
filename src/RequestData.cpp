@@ -1,6 +1,7 @@
 #include "RequestData.hpp"
 
 #include "Configuration.hpp"
+#include "Utils.hpp"
 
 char* my_inet_ntoa(struct in_addr in) {
     static char buffer[INET_ADDRSTRLEN];
@@ -84,11 +85,11 @@ void RequestData::setBody(const std::string& body) { this->body = body; }
 
 void RequestData::setClientData(sockaddr_in client) {
     clientData.ip = my_inet_ntoa(client.sin_addr);
-    clientData.port = std::to_string(ntohs(client.sin_port));
+    clientData.port = to_string(ntohs(client.sin_port));
 }
 void RequestData::setServerData(sockaddr_in server) {
     serverData.ip = my_inet_ntoa(server.sin_addr);
-    serverData.port = std::to_string(ntohs(server.sin_port));
+    serverData.port = to_string(ntohs(server.sin_port));
 }
 
 // TEMPORARY
