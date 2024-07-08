@@ -66,6 +66,15 @@ function loadContent(page, buttonElement) {
                     } else {
                         console.log('cgi.js script already loaded');
                     }
+                } else if (page === 'features.html') {
+                    if (!document.querySelector('script[src="features.js"]')) {
+                        const script = document.createElement('script');
+                        script.src = 'features.js';
+                        script.onload = () => console.log('features.js script loaded');
+                        document.body.appendChild(script);
+                    } else {
+                        console.log('features.js script already loaded');
+                    }
                 }
 
                 // Update the current page after successful fetch and script loading

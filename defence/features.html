@@ -8,57 +8,105 @@
     <meta name="keywords" content="Webserv, Features, HTTP Server">
     <title>Webserv Features</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="features_styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+
 </head>
 
 <body>
-    <header>
+    <header class="header-features">
         <div class="container">
-            <!-- <h1>Webserv Features</h1>
-            <nav>
-                <ul>
-                    <li><a href="index.html">Home</a></li>
-                    <li><a href="about.html">About</a></li>
-                    <li><a href="setup.html">Setup</a></li>
-                    <li><a href="contact.html">Contact</a></li>
-                    <li><a href="evaluation.html">Evaluation</a></li>
-                </ul>
-            </nav> -->
+            <p>Webserv uses non-blocking I/O operations and the kqueue() system call to handle multiple connections
+                efficiently.</p>
+            <p>It is written in C++98 and ensures compatibility with chrome browser.</p>
         </div>
-    </header>
+    </header class="header-features">
     <main>
         <div class="container">
             <section>
                 <h2>Core Features</h2>
-                <ul>
-                    <li>Support for GET, POST, DELETE methods</li>
-                    <li>File uploads</li>
-                    <li>Multiple port listening</li>
-                    <li>Non-blocking I/O operations</li>
-                    <li>Poll() system call for handling connections</li>
-                </ul>
             </section>
+            <section class="section-header">
+                <div class="card-list">
+                    <div class="card-feature">
+                        GET, POST, DELETE methods
+                    </div>
+                    <div class="card-feature">
+                        File uploads
+                    </div>
+                    <div class="card-feature">
+                        Multiple port listening
+                    </div>
+                    <div class="card-feature">
+                        Non-blocking I/O operations
+                    </div>
+                    <div class="card-feature">
+                        kqueue() system call
+                    </div>
+                </div>
+            </section class="section-header">
             <section>
                 <h2>Technical Details</h2>
-                <p>Webserv uses non-blocking I/O operations and the poll() system call to handle multiple connections
-                    efficiently. It is written in C++ 98 and ensures compatibility with major web browsers.</p>
-                <p>Example configuration:</p>
-                <pre><code>
-server {
-    listen 80;
-    server_name example.com;
-    root /var/www/html;
-    ...
-}
-                </code></pre>
+            </section>
+            <section class="section-end">
+                <div class="card-container">
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-content">
+                            <h3>Configuration</h3>
+                        </div>
+                        <div class="card-description">
+                            <p>Extensive configuration options for managing various tasks.</p>
+                            <ul>
+                                <li>Customizable server settings</li>
+                                <li>Support for multiple virtual hosts</li>
+                                <li>Flexible directory and file management</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-content">
+                            <h3>Connector</h3>
+                        </div>
+                        <div class="card-description">
+                            <p>Manages incoming connections and ensures reliable communication.</p>
+                            <ul>
+                                <li>Handles multiple connections concurrently</li>
+                                <li>Supports SSL/TLS for secure communication</li>
+                                <li>Optimized for performance with non-blocking I/O</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-content">
+                            <h3>Parser</h3>
+                        </div>
+                        <div class="card-description">
+                            <p>Interprets incoming requests for accurate data processing.</p>
+                            <ul>
+                                <li>Efficiently parses HTTP requests</li>
+                                <li>Supports various HTTP methods</li>
+                                <li>Handles request headers and body seamlessly</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-content">
+                            <h3>Worker</h3>
+                        </div>
+                        <div class="card-description">
+                            <p>Processes tasks and handles request responses efficiently.</p>
+                            <ul>
+                                <li>Manages worker threads for handling tasks</li>
+                                <li>Ensures balanced load distribution</li>
+                                <li>Optimized for minimal latency and high throughput</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </section>
         </div>
     </main>
-    <footer>
-        <div class="container">
-            <p>&copy; 2024 Webserv Team | <a href="privacy.html">Privacy Policy</a></p>
-        </div>
-    </footer>
+    <script src="index.js"></script>
 </body>
 
 </html>
