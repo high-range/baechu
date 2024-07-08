@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Nginx Configuration Guide">
+    <meta name="keywords" content="Nginx, Configuration, Guide, HTTP server">
+    <title>Nginx Configuration Guide</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <main>
+        <div class="container">
+            <section>
+                <h1>Introduction</h1>
+                <p>This guide provides details on how to configure Nginx with various directives and their proper usage.</p>
+            </section>
+            <section>
+                <h2>Configuration Guidelines</h2>
+                <ul>
+                    <li>Block directives must start and end with curly braces.</li>
+                    <li>Simple directives must end with a semicolon (‘;’).</li>
+                    <li>Only one <code>http</code> block is allowed.</li>
+                    <li><code>server</code> blocks must include a <code>listen</code> directive.</li>
+                    <li><code>location</code> names must end with a ‘/’.</li>
+                    <li>CGI extensions must start with a ‘.’.</li>
+                    <li><code>cgi</code> directives must include a <code>root</code> directive.</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Directives</h2>
+                <h3>Block Directives</h3>
+                <ul>
+                    <li>
+                        <strong>http</strong>
+                        <pre><code>Syntax : http { ... }</code></pre>
+                        <pre><code>Default: -</code></pre>
+                        <pre><code>Context: main</code></pre>
+                        <p>Provides HTTP server directives.</p>
+                    </li>
+                    <li>
+                        <strong>server</strong>
+                        <pre><code>Syntax : server { ... }</code></pre>
+                        <pre><code>Default: -</code></pre>
+                        <pre><code>Context: http</code></pre>
+                        <p>Sets configurations for a virtual server.</p>
+                    </li>
+                    <li>
+                        <strong>location</strong>
+                        <pre><code>Syntax : location uri { ... }</code></pre>
+                        <pre><code>Default: -</code></pre>
+                        <pre><code>Context: server</code></pre>
+                        <p>Sets configurations for a specific location.</p>
+                    </li>
+                    <li>
+                        <strong>cgi</strong>
+                        <pre><code>Syntax : cgi extension { ... }</code></pre>
+                        <pre><code>Default: -</code></pre>
+                        <pre><code>Context: server</code></pre>
+                        <p>Sets configurations for CGI scripts.</p>
+                    </li>
+                </ul>
+                <h3>Simple Directives</h3>
+                <ul>
+                    <li>
+                        <strong>listen</strong>
+                        <pre><code>Syntax: listen ip:port; | listen ip; | listen port;</code></pre>
+                        <pre><code>Default: listen *:80;</code></pre>
+                        <pre><code>Context: server</code></pre>
+                    </li>
+                    <li>
+                        <strong>root</strong>
+                        <pre><code>Syntax: root path;</code></pre>
+                        <pre><code>Default: -</code></pre>
+                        <pre><code>Context: server, location, if in location</code></pre>
+                    </li>
+                    <li>
+                        <strong>server_name</strong>
+                        <pre><code>Syntax: server_name name;</code></pre>
+                        <pre><code>Default: -</code></pre>
+                        <pre><code>Context: server</code></pre>
+                    </li>
+                    <li>
+                        <strong>limit_except</strong>
+                        <pre><code>Syntax: limit_except method ...;</code></pre>
+                        <pre><code>Default: -</code></pre>
+                        <pre><code>Context: location</code></pre>
+                    </li>
+                    <li>
+                        <strong>client_max_body_size</strong>
+                        <pre><code>Syntax: client_max_body_size size;</code></pre>
+                        <pre><code>Default: client_max_body_size 1m;</code></pre>
+                        <pre><code>Context: http, server, location</code></pre>
+                    </li>
+                    <li>
+                        <strong>error_page</strong>
+                        <pre><code>Syntax: error_page code ... uri;</code></pre>
+                        <pre><code>Default: -</code></pre>
+                        <pre><code>Context: server</code></pre>
+                    </li>
+                    <li>
+                        <strong>autoindex</strong>
+                        <pre><code>Syntax: autoindex on | off;</code></pre>
+                        <pre><code>Default: autoindex off;</code></pre>
+                        <pre><code>Context: location</code></pre>
+                    </li>
+                    <li>
+                        <strong>return</strong>
+                        <pre><code>Syntax: return code ... uri;</code></pre>
+                        <pre><code>Default: -</code></pre>
+                        <pre><code>Context: location</code></pre>
+                    </li>
+                </ul>
+            </section>
+            <section>
+                <h2>Server Block Matching Priority</h2>
+                <ol>
+                    <li>Find the server with matching <code>ip:port</code> and <code>server_name</code>.</li>
+                    <li>Find the server with matching <code>port</code>.</li>
+                    <li>Find the server with matching <code>ip</code>.</li>
+                    <li>Find the server with matching <code>server_name</code>.</li>
+                    <li>If none match, use the default server (first server block).</li>
+                </ol>
+            </section>
+            <section>
+                <h2>Location Block Matching Method</h2>
+                <p>Uses the longest prefix matching method to find the location block.</p>
+            </section>
+			<section>
+				<h2>Configuration Test</h2>
+				<ul>
+					<li>setup default error page. <a href="http://localhost:8080/errorpage/">Error Page</a></li>
+					<li>setup routes in a server to different directories. <a href="http://localhost:8080/42seoul/">42seoul Directory</a></li>
+					<li>setup routes in a server to different directories. <a href="http://localhost:8080/redirect/">Redirect URL</a></li>
+					<li>setup a list of method accepted for a certain route. </li>
+					<li>limit the client body. </li>
+					<li>
+						<form action="http://localhost:8080/bodylimit/" method="POST">
+							<label for="message">Message:</label>
+							<input type="text" size="50" id="message" name="message" required>
+							<button type="submit">Send</button>
+						</form>
+					</li>
+				</ul>
+			</section>
+        </div>
+    </main>
+</body>
+</html>
