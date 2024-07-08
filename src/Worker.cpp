@@ -39,10 +39,6 @@ std::string Worker::getFullPath(const std::string& path) {
     if (root.back() == '/') {
         root.pop_back();
     }
-
-    std::cout << "root: " << root << std::endl;
-    std::cout << "path: " << path << std::endl;
-    std::cout << "fullPath: " << root + path << std::endl;
     return root + path;
 }
 
@@ -420,10 +416,12 @@ ResponseData Worker::resolveErrorPage(ResponseData& response) {
         std::string errorPagePath = getFullPath(errorPage);
         std::string errorPageContent =
             loadErrorPage(response.statusCode, errorPagePath);
+        if (errorPageContent.empty()) return ResponseData(500);
         return ResponseData(response.statusCode, errorPageContent);
     } else if (response.statusCode >= 400 && response.statusCode <= 599) {
-        return ResponseData(response.statusCode,
-                            loadErrorPage(response.statusCode, ""));
+        std::string errorPageContent = loadErrorPage(response.statusCode, "");
+        if (errorPageContent.empty()) return ResponseData(500);
+        return ResponseData(response.statusCode, errorPageContent);
     }
 
     return response;

@@ -1,4 +1,5 @@
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include <fstream>
 #include <iostream>
@@ -62,10 +63,16 @@ bool isReadableFile(const std::string& path) {
 }
 
 std::string loadErrorPage(int statusCode, std::string errorPagePath) {
+    char cwd[PATH_MAX];
+    if (getcwd(cwd, sizeof(cwd)) == NULL) {
+        std::cerr << "Error: cannot get current working directory" << std::endl;
+        return "";
+    }
+    std::string currentDir(cwd);
+
     bool isDefaultErrorPage = false;
     if (isReadableFile(errorPagePath) == false) {
-        errorPagePath =
-            "/Users/leesiha/42/baechu/defence/default_error_page.html";
+        errorPagePath = currentDir + "/defence/default_error_page.html";
         isDefaultErrorPage = true;
     }
 
