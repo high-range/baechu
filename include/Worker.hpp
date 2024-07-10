@@ -57,6 +57,7 @@ class Worker {
     std::string runCgi();
 };
 
+bool isUtf8(const std::string& str);
 std::string lower(std::string s);
 std::string getServerName(std::string host);
 char** makeArgs(const std::string& exePath, const std::string& scriptName);

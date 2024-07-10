@@ -157,7 +157,7 @@ ResponseData Worker::doGet() {
 
     struct stat buf;
     if (stat(fullPath.c_str(), &buf) != 0) {
-        std::cout << "File not found" << std::endl;
+        std::cerr << "File not found" << std::endl;
         return ResponseData(404);
     }
 
@@ -169,7 +169,7 @@ ResponseData Worker::doGet() {
             headers["Location"] = path + "/";
             return ResponseData(301, headers);
         }
-        std::cout << "Unexpected file type" << std::endl;
+        std::cerr << "Unexpected file type" << std::endl;
         return ResponseData(404);
     }
 
@@ -192,6 +192,11 @@ ResponseData Worker::doGet() {
 }
 
 ResponseData Worker::doPost() {
+    if (isUtf8(fullPath)) {
+        std::cerr << "Non-ASCII characters in the file path. Korean is not supported." << std::endl;
+        return ResponseData(400);
+    }
+
     struct stat buf;
     if (stat(fullPath.c_str(), &buf) == 0) {
         if (S_ISDIR(buf.st_mode)) {
@@ -219,6 +224,7 @@ ResponseData Worker::doPost() {
         file.close();
         return ResponseData(201);
     }
+    std::cerr << "Failed to create a file" << std::endl;
     return ResponseData(500);
 }
 
