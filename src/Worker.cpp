@@ -304,22 +304,37 @@ ResponseData Worker::handleDynamicRequest() {
 
 std::string Worker::runCgi() {
     int fds[2];
-    if (pipe(fds) == -1) {
-        perror("pipe");
+    int inFds[2];
+    if (pipe(fds) == -1 || pipe(inFds) == -1) {
+        std::cerr << "pipe failed" << std::endl;
         return "Internal Server Error";
     }
 
     pid_t pid = fork();
     if (pid == -1) {
-        perror("fork");
+        std::cerr << "fork failed" << std::endl;
+        close(fds[0]);
+        close(fds[1]);
+        close(inFds[0]);
+        close(inFds[1]);
         return "Internal Server Error";
     }
 
     if (pid == 0) {  // child process
         close(fds[0]);
+        close(inFds[1]);
 
-        dup2(fds[1], STDOUT_FILENO);
+        if (dup2(fds[1], STDOUT_FILENO) == -1) {
+            std::cerr << "dup2 failed for stdout" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        if (dup2(inFds[0], STDIN_FILENO) == -1) {
+            std::cerr << "dup2 failed for stdin" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
         close(fds[1]);
+        close(inFds[0]);
 
         CgiEnvMap envMap = createCgiEnvMap();
         char** envp = makeEnvp(envMap);
@@ -331,17 +346,29 @@ std::string Worker::runCgi() {
         }
 
         execve(exePath.c_str(), args, envp);
-
+        std::cerr << "execve failed" << std::endl;
         exit(EXIT_FAILURE);
     }
 
     close(fds[1]);
+    close(inFds[0]);
+
+    // Write request body to the CGI script's stdin
+    if (write(inFds[1], request.getBody().c_str(), request.getBody().size()) ==
+        -1) {
+        std::cerr << "write failed" << std::endl;
+    }
+    close(inFds[1]);
 
     std::ostringstream ss;
     char buf[4096];
     ssize_t n;
     while ((n = read(fds[0], buf, sizeof(buf))) > 0) {
         ss.write(buf, n);
+    }
+
+    if (n == -1) {
+        std::cerr << "read failed" << std::endl;
     }
 
     close(fds[0]);

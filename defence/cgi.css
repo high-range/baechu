@@ -117,3 +117,86 @@ button:hover {
     /* Updated background color */
     color: white;
 }
+
+/* Guestbook section styles */
+.guestbook-section {
+    margin-bottom: 20px;
+    padding: 20px;
+    background-color: #f9f9f987;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+}
+
+.guestbook-section h4 {
+    margin-bottom: 10px;
+    font-size: 20px;
+}
+
+.guestbook-section label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.guestbook-section form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.guestbook-section input,
+.guestbook-section textarea {
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.guestbook-section button {
+    padding: 12px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+    width: 100px;
+    align-self: flex-start;
+}
+
+.guestbook-section button:hover {
+    background-color: #0056b3;
+}
+
+#feedback-result {
+    margin-top: 10px;
+    color: green;
+}
+
+/* Feedback item styles */
+.feedback-item {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #e3f2fd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.feedback-item p {
+    margin: 0;
+    color: #333;
+}
+
+.feedback-header {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #007BFF;
+}

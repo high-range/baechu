@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CGI Click Counter and Calculator</title>
+    <title>CGI Click Counter, Calculator, and Feedback Form</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="evaluation.css">
     <link rel="stylesheet" href="cgi.css">
@@ -14,8 +14,8 @@
 <body>
     <header>
         <div class="container">
-            <h1>Click Counter and Calculator using CGI</h1>
-            <p>Click the button to increase the count or reset to start from zero.</p>
+            <h1>Click Counter, Calculator, and Feedback Form using CGI</h1>
+            <p>Click the button to increase the count, use the calculator, or submit feedback.</p>
         </div>
     </header>
     <main>
@@ -56,16 +56,23 @@
                 <div id="calculation-result"></div>
             </section>
             <section>
-                <h2>Sign Guestbook</h2>
-                <div class="test-section">
-                    <h4>Leave your message and upload an image</h4>
-                    <form id="guestbook-form" enctype="multipart/form-data" method="post" action="/guestbook.py">
-                        <input type="text" name="name" placeholder="Your name" required>
-                        <textarea name="message" rows="4" cols="50" placeholder="Your message" required></textarea>
-                        <input type="file" name="image" accept="image/*" required>
-                        <button type="submit">Submit</button>
-                    </form>
-                    <div id="guestbook-result"></div>
+                <h2>Feedbacks</h2>
+                <div class="guestbook-section">
+                    <ul id="feedback-list">
+                        <li>Thank you for your feedback!</li>
+                    </ul>
+                </div>
+                <h2>Feedback Form</h2>
+                <div class="guestbook-section">
+                    <h4>Submit Your Feedback</h4>
+                    <div id="feedback-form">
+                        <label for="name">Name:</label>
+                        <input type="text" id="name" name="name" required>
+                        <label for="message">Message:</label>
+                        <textarea id="message" name="message" rows="4" required></textarea>
+                        <button id="submit-feedback" type="button">Submit</button>
+                    </div>
+                    <div id="feedback-result"></div>
                 </div>
             </section>
         </div>

@@ -1,51 +1,97 @@
+// Fetch existing feedback data on page load
+function fetchNewFeedbacks() {
+    fetch('/get_feedback.py')
+        .then(response => response.json())
+        .then(data => {
+            console.log("Fetched feedback data:", data); // Debug message
+            const feedbackList = document.getElementById('feedback-list');
+            feedbackList.innerHTML = '';
+            data.forEach(feedback => {
+                const feedbackItem = document.createElement('li');
+                feedbackItem.classList.add('feedback-item');
+                feedbackItem.innerHTML = `
+                    <p class="feedback-header">${feedback.name} | ${feedback.timestamp}</p>
+                    <p>${feedback.message}</p>
+                `;
+                feedbackList.appendChild(feedbackItem);
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}
+
+// Setup feedback form submission
+function setupFeedbackForm() {
+    const feedbackButton = document.getElementById('submit-feedback');
+    const feedbackResult = document.getElementById('feedback-result');
+
+    if (feedbackButton) {
+        feedbackButton.addEventListener('click', function () {
+            const name = document.getElementById('name').value;
+            const message = document.getElementById('message').value;
+
+            if (name && message) {
+                const formData = new URLSearchParams();
+                formData.append('name', name);
+                formData.append('message', message);
+
+                fetch('/submit_feedback.py', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        return response.json();
+                    })
+                    .then(data => {
+                        fetchNewFeedbacks(); // Fetch and update new feedback
+                        document.getElementById('name').value = '';
+                        document.getElementById('message').value = '';
+                    })
+                    .catch(error => {
+                        feedbackResult.textContent = 'Error submitting feedback.';
+                        console.error('Error:', error);
+                    });
+            } else {
+                feedbackResult.textContent = 'Please fill out both fields.';
+            }
+        });
+    }
+}
+
+// 카운터 설정 함수
 function setupClickCounter() {
     const clickButton = document.getElementById('click-button');
     const clickResult = document.getElementById('click-result');
     const resetButton = document.getElementById('reset-button');
 
-    // 클릭 카운터 이벤트 리스너 설정
     if (clickButton && !clickButton.dataset.listenerAdded) {
         clickButton.addEventListener('click', function () {
-            console.log('Clicking the button');
             fetch('/click_counter.py')
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    return response.text();
-                })
+                .then(response => response.text())
                 .then(data => {
                     clickResult.innerHTML = data;
-                    console.log('Click counter response data:', data);
                 })
                 .catch(error => console.error('Error:', error));
         });
         clickButton.dataset.listenerAdded = 'true';
-        console.log('Click counter setup completed');
     }
 
-    // 초기화 버튼 이벤트 리스너 설정
     if (resetButton && !resetButton.dataset.listenerAdded) {
         resetButton.addEventListener('click', function () {
-            console.log('Resetting the counter');
             fetch('/reset_counter.py', { method: 'POST' })
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    return response.text();
-                })
+                .then(response => response.text())
                 .then(data => {
                     clickResult.innerHTML = '0';
-                    console.log('Reset counter response data:', data);
                 })
                 .catch(error => console.error('Error:', error));
         });
         resetButton.dataset.listenerAdded = 'true';
-        console.log('Reset counter setup completed');
     }
 }
 
-document.addEventListener('DOMContentLoaded', (event) => {
-    setupClickCounter();
-});
-
+// 계산기 설정 함수
 function setupCalculator() {
     const display = document.getElementById('calc-display');
     const buttons = document.querySelectorAll('.calculator button');
@@ -111,12 +157,7 @@ function setupCalculator() {
         const query = `first_value=${encodeURIComponent(firstValue)}&second_value=${encodeURIComponent(secondValue)}&operator=${encodeURIComponent(operatorSymbol)}`;
 
         fetch(`/calculator.py?${query}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error("Network response was not ok");
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
                 if (data.error) {
                     console.error('Error:', data.error);
@@ -134,19 +175,8 @@ function setupCalculator() {
     }
 }
 
-// Immediately call the function to setup event listeners
+// 페이지 로드 시 초기 설정
+fetchNewFeedbacks(); // 페이지 로드 시 기존 피드백을 로드
 setupClickCounter();
 setupCalculator();
-
-// Additionally, monitor changes to the DOM and re-setup the event listeners if needed
-const observer = new MutationObserver((mutations) => {
-    for (let mutation of mutations) {
-        if (mutation.type === 'childList') {
-            setupClickCounter();
-            setupCalculator();
-        }
-    }
-});
-
-// Observe changes to the entire document body
-observer.observe(document.body, { childList: true, subtree: true });
+setupFeedbackForm();

@@ -24,8 +24,6 @@ function loadContent(page, buttonElement) {
         console.log(`Page ${page} is already loaded.`);
         return;  // 현재 페이지가 이미 로드된 상태이면 fetch를 호출하지 않음
     }
-
-    console.log('Loading content for page:', page);
     const contentContainer = document.getElementById('content-container');
     contentContainer.style.display = 'block';
 
@@ -38,7 +36,6 @@ function loadContent(page, buttonElement) {
         fetch(page)
             .then(response => response.text())
             .then(data => {
-                console.log('Content loaded for page:', page);
                 const releaseItem = buttonElement.closest('.release-item');
                 const bgColor = window.getComputedStyle(releaseItem).backgroundColor;
                 contentContainer.innerHTML = data;
@@ -49,32 +46,35 @@ function loadContent(page, buttonElement) {
 
                 // Dynamically load JavaScript file for the loaded content
                 if (page === 'methods.html') {
-                    if (!document.querySelector('script[src="methods.js"]')) {
-                        const script = document.createElement('script');
-                        script.src = 'methods.js';
-                        script.onload = () => console.log('methods.js script loaded');
-                        document.body.appendChild(script);
-                    } else {
-                        console.log('methods.js script already loaded');
+                    if (document.querySelector('script[src="methods.js"]'))
+                    {
+                        document.getElementsByTagName('script')[0].remove();
+                        console.log('methods.js script removed');
                     }
+                    const script = document.createElement('script');
+                    script.src = 'methods.js';
+                    script.onload = () => console.log('methods.js script loaded');
+                    document.body.appendChild(script);
                 } else if (page === 'cgi.html') {
-                    if (!document.querySelector('script[src="cgi.js"]')) {
-                        const script = document.createElement('script');
-                        script.src = 'cgi.js';
-                        script.onload = () => console.log('cgi.js script loaded');
-                        document.body.appendChild(script);
-                    } else {
-                        console.log('cgi.js script already loaded');
+                    if (document.querySelector('script[src="cgi.js"]'))
+                    {
+                        document.getElementsByTagName('script')[0].remove();
+                        console.log('cgi.js script removed');
                     }
+                    const script = document.createElement('script');
+                    script.src = 'cgi.js';
+                    script.onload = () => console.log('cgi.js script loaded');
+                    document.body.appendChild(script);
                 } else if (page === 'features.html') {
-                    if (!document.querySelector('script[src="features.js"]')) {
-                        const script = document.createElement('script');
-                        script.src = 'features.js';
-                        script.onload = () => console.log('features.js script loaded');
-                        document.body.appendChild(script);
-                    } else {
-                        console.log('features.js script already loaded');
+                    if (document.querySelector('script[src="features.js"]'))
+                    {
+                        document.getElementsByTagName('script')[0].remove();
+                        console.log('features.js script removed');
                     }
+                    const script = document.createElement('script');
+                    script.src = 'features.js';
+                    script.onload = () => console.log('features.js script loaded');
+                    document.body.appendChild(script);
                 }
 
                 // Update the current page after successful fetch and script loading
