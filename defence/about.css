@@ -1,0 +1,43 @@
+/* about.css */
+
+.content {
+    margin-top: 20px;
+}
+
+h2 {
+    color: #ffcc00;
+    margin-bottom: 15px;
+}
+
+p {
+    color: #FFF;
+    line-height: 1.6;
+}
+
+.team-member {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.team-member img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin-right: 20px;
+}
+
+.team-member-info {
+    color: #007BFF;
+}
+
+.team-member-info strong {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.team-member-info span {
+    font-size: 14px;
+    color: #FFF;
+}
