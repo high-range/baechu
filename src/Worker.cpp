@@ -344,7 +344,7 @@ std::string Worker::runCgi() {
 
         CgiEnvMap envMap = createCgiEnvMap();
         char** envp = makeEnvp(envMap);
-        char** args = makeArgs(exePath, fullPath);
+        char** args = makeArgs(exePath, fullPath, pathInfo);
 
         if (!isExecutable(exePath)) {
             std::cerr << "Not an executable file" << std::endl;
@@ -405,31 +405,15 @@ CgiEnvMap Worker::createCgiEnvMap() {
 }
 
 ResponseData Worker::handleRequest() {
-    Configuration& config = Configuration::getInstance();
     size_t dotPos = path.rfind('.');
+
     if (dotPos != std::string::npos) {
-        size_t dirPos = path.find('/', dotPos);
-        if (dirPos == std::string::npos) {
-            dirPos = path.length();
-        }
+        size_t pathEndPos = determinePathEndPos(dotPos);
 
-        std::string ext = path.substr(dotPos, dirPos - dotPos);
-        ext = lower(ext);
+        std::string ext = lower(path.substr(dotPos, pathEndPos - dotPos));
 
-        std::vector<std::string> cgiExtensions =
-            config.getCgiExtensions(ip, port, serverName);
-        for (std::vector<std::string>::iterator it = cgiExtensions.begin();
-             it != cgiExtensions.end(); it++) {
-            if (ext == *it) {
-                isStatic = false;
-                pathInfo = path.substr(dirPos);
-                scriptName = path.substr(0, dirPos);
-                std::string cgiPath =
-                    config.getCgiPath(ip, port, serverName, ext);
-                fullPath = cgiPath + scriptName;
-                exePath = config.getInterpreterPath(ip, port, serverName, ext);
-                break;
-            }
+        if (isCgiExtension(ext)) {
+            configureCgiRequest(ext, pathEndPos);
         }
     }
 
@@ -437,6 +421,41 @@ ResponseData Worker::handleRequest() {
         return handleStaticRequest();
     }
     return handleDynamicRequest();
+}
+
+size_t Worker::determinePathEndPos(size_t dotPos) {
+    size_t pathEndPos = path.find('/', dotPos);
+    if (pathEndPos == std::string::npos) {
+        pathEndPos = path.length();
+    }
+    return pathEndPos;
+}
+
+bool Worker::isCgiExtension(const std::string& ext) {
+    Configuration& config = Configuration::getInstance();
+    std::vector<std::string> cgiExtensions = config.getCgiExtensions(ip, port, serverName);
+    for (std::vector<std::string>::const_iterator it = cgiExtensions.begin(); it != cgiExtensions.end(); ++it) {
+        if (ext == *it) {
+            isStatic = false;
+            return true;
+        }
+    }
+    return false;
+}
+
+void Worker::configureCgiRequest(const std::string& ext, size_t pathEndPos) {
+    Configuration& config = Configuration::getInstance();
+
+    if (pathEndPos == path.length()) {
+        pathInfo = "";
+    } else {
+        pathInfo = path.substr(pathEndPos);
+    }
+    
+    scriptName = path.substr(0, pathEndPos);
+    std::string cgiPath = config.getCgiPath(ip, port, serverName, ext);
+    fullPath = cgiPath + scriptName;
+    exePath = config.getInterpreterPath(ip, port, serverName, ext);
 }
 
 ResponseData Worker::resolveErrorPage(ResponseData& response) {

@@ -37,13 +37,15 @@ std::string getServerName(std::string host) {
     return host.substr(0, colonPos);
 }
 
-char** makeArgs(const std::string& exePath, const std::string& scriptName) {
-    char** args = new char*[3];
+char** makeArgs(const std::string& exePath, const std::string& fullPath, const std::string& pathInfo) {
+    char** args = new char*[4];
     args[0] = new char[exePath.size() + 1];
     std::strcpy(args[0], exePath.c_str());
-    args[1] = new char[scriptName.size() + 1];
-    std::strcpy(args[1], scriptName.c_str());
-    args[2] = NULL;
+    args[1] = new char[fullPath.size() + 1];
+    std::strcpy(args[1], fullPath.c_str());
+    args[2] = new char[pathInfo.size() + 1];
+    std::strcpy(args[2], pathInfo.c_str());
+    args[3] = NULL;
     return args;
 }
 

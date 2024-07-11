@@ -28,6 +28,7 @@ class Worker {
   private:
     const RequestData& request;
 
+    bool isStatic;
     std::string ip;
     std::string port;
     std::string serverName;
@@ -43,7 +44,6 @@ class Worker {
     void setPath(const std::string& path);
     std::string getFullPath(const std::string& path);
 
-    bool isStatic;
     ResponseData handleStaticRequest();
     ResponseData handleDynamicRequest();
     // used in handleStaticRequest
@@ -54,13 +54,16 @@ class Worker {
     ResponseData doDelete();
     // used in handleDynamicRequest
     CgiEnvMap createCgiEnvMap();
+    size_t determinePathEndPos(size_t dotPos);
+    bool isCgiExtension(const std::string& ext);
+    void configureCgiRequest(const std::string& ext, size_t pathEndPos);
     std::string runCgi();
 };
 
 bool isUtf8(const std::string& str);
 std::string lower(std::string s);
 std::string getServerName(std::string host);
-char** makeArgs(const std::string& exePath, const std::string& scriptName);
+char** makeArgs(const std::string& exePath, const std::string& scriptName, const std::string& pathInfo);
 char** makeEnvp(CgiEnvMap& envMap);
 bool isExecutable(const std::string& path);
 std::string loadErrorPage(int statusCode, const std::string errorPagePath);
