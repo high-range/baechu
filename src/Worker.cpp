@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <ctime>
 #include <fstream>
@@ -15,6 +16,13 @@
 #include "RequestData.hpp"
 #include "Response.hpp"
 #include "Utils.hpp"
+
+volatile sig_atomic_t timeout_occurred = 0;
+
+void timeoutHandler(int signum) { 
+    (void)signum;
+    timeout_occurred = 1; 
+}
 
 void Worker::setPath(const std::string& path) {
     this->path = path;
@@ -264,6 +272,11 @@ ResponseData Worker::handleDynamicRequest() {
     }
 
     std::string response = runCgi();
+    if (response == "504 Gateway Time-out") {
+        return ResponseData(504);
+    } else if (response == "Internal Server Error") {
+        return ResponseData(500);
+    }
     std::istringstream ss(response);
 
     Headers headers;
@@ -308,14 +321,15 @@ ResponseData Worker::handleDynamicRequest() {
         .withReasonPhrase(reasonPhrase);
 }
 
-std::string Worker::runCgi() {
-    int fds[2];
-    int inFds[2];
+bool Worker::setupPipes(int fds[2], int inFds[2]) {
     if (pipe(fds) == -1 || pipe(inFds) == -1) {
         std::cerr << "pipe failed" << std::endl;
-        return "Internal Server Error";
+        return false;
     }
+    return true;
+}
 
+pid_t Worker::forkAndSetupChild(int fds[2], int inFds[2]) {
     pid_t pid = fork();
     if (pid == -1) {
         std::cerr << "fork failed" << std::endl;
@@ -323,7 +337,7 @@ std::string Worker::runCgi() {
         close(fds[1]);
         close(inFds[0]);
         close(inFds[1]);
-        return "Internal Server Error";
+        return -1;
     }
 
     if (pid == 0) {  // child process
@@ -356,30 +370,94 @@ std::string Worker::runCgi() {
         exit(EXIT_FAILURE);
     }
 
-    close(fds[1]);
-    close(inFds[0]);
+    return pid;
+}
 
-    // Write request body to the CGI script's stdin
-    if (write(inFds[1], request.getBody().c_str(), request.getBody().size()) ==
-        -1) {
+void Worker::writeRequestBody(int inFd) {
+    if (write(inFd, request.getBody().c_str(), request.getBody().size()) == -1) {
         std::cerr << "write failed" << std::endl;
     }
-    close(inFds[1]);
+    close(inFd);
+}
 
+void Worker::setupSignalHandler() {
+    struct sigaction sa;
+    sa.sa_handler = timeoutHandler;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGALRM, &sa, NULL);
+}
+
+std::string Worker::readFromChild(int fd) {
     std::ostringstream ss;
     char buf[4096];
     ssize_t n;
-    while ((n = read(fds[0], buf, sizeof(buf))) > 0) {
-        ss.write(buf, n);
+
+    while (true) {
+        n = read(fd, buf, sizeof(buf));
+        if (n > 0) {
+            ss.write(buf, n);
+        } else if (n == -1) {
+            if (timeout_occurred) {
+                std::cerr << "read failed: Timeout occurred" << std::endl;
+                break;
+            } else {
+                continue;
+            }
+        } else {
+            break;
+        }
     }
 
-    if (n == -1) {
-        std::cerr << "read failed" << std::endl;
-    }
-
-    close(fds[0]);
-    waitpid(pid, NULL, 0);
+    close(fd);
     return ss.str();
+}
+
+std::string Worker::handleTimeout(pid_t pid, int status) {
+    pid_t result = waitpid(pid, &status, WNOHANG);
+    if (result == 0) {
+        if (timeout_occurred) {
+            kill(pid, SIGKILL);
+            waitpid(pid, &status, 0);
+            alarm(0);  // 알람 취소
+            return "504 Gateway Time-out";
+        }
+    } else if (result == -1) {
+        std::cerr << "waitpid failed" << std::endl;
+        return "Internal Server Error";
+    }
+    alarm(0);  // 알람 취소
+    return "";
+}
+
+std::string Worker::runCgi() {
+    int fds[2], inFds[2];
+    if (!setupPipes(fds, inFds)) {
+        return "Internal Server Error";
+    }
+
+    pid_t pid = forkAndSetupChild(fds, inFds);
+    if (pid == -1) {
+        return "Internal Server Error";
+    }
+
+    close(fds[1]);
+    close(inFds[0]);
+
+    writeRequestBody(inFds[1]);
+    setupSignalHandler();
+
+    // timeout_occurred를 함수 내에서 관리
+    timeout_occurred = 0;
+    alarm(5);  // 5초 후에 타임아웃 발생
+
+    std::string result = readFromChild(fds[0]);
+    std::string timeoutResult = handleTimeout(pid, 0);
+    if (!timeoutResult.empty()) {
+        return timeoutResult;
+    }
+
+    return result;
 }
 
 CgiEnvMap Worker::createCgiEnvMap() {

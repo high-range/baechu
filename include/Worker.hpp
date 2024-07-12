@@ -57,7 +57,15 @@ class Worker {
     size_t determinePathEndPos(size_t dotPos);
     bool isCgiExtension(const std::string& ext);
     void configureCgiRequest(const std::string& ext, size_t pathEndPos);
+
     std::string runCgi();
+    // used in runCgi
+    bool setupPipes(int fds[2], int inFds[2]);
+    pid_t forkAndSetupChild(int fds[2], int inFds[2]);
+    void writeRequestBody(int inFd);
+    void setupSignalHandler();
+    std::string readFromChild(int fd);
+    std::string handleTimeout(pid_t pid, int status);
 };
 
 bool isUtf8(const std::string& str);
