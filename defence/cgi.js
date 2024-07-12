@@ -1,7 +1,12 @@
 // Fetch existing feedback data on page load
 function fetchNewFeedbacks() {
     fetch('/get_feedback.py')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             console.log("Fetched feedback data:", data); // Debug message
             const feedbackList = document.getElementById('feedback-list');
@@ -41,13 +46,24 @@ function setupFeedbackForm() {
                     body: formData
                 })
                     .then(response => {
-                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
                         return response.json();
                     })
                     .then(data => {
-                        fetchNewFeedbacks(); // Fetch and update new feedback
+                        const feedbackList = document.getElementById('feedback-list');
+                        const feedbackItem = document.createElement('li');
+                        feedbackItem.classList.add('feedback-item');
+                        feedbackItem.innerHTML = `
+                            <p class="feedback-header">${data.name} | ${data.timestamp}</p>
+                            <p>${data.message}</p>
+                        `;
+                        feedbackList.appendChild(feedbackItem);
+
                         document.getElementById('name').value = '';
                         document.getElementById('message').value = '';
+                        feedbackResult.textContent = 'Feedback submitted successfully!';
                     })
                     .catch(error => {
                         feedbackResult.textContent = 'Error submitting feedback.';
@@ -69,7 +85,12 @@ function setupClickCounter() {
     if (clickButton && !clickButton.dataset.listenerAdded) {
         clickButton.addEventListener('click', function () {
             fetch('/click_counter.py')
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text();
+                })
                 .then(data => {
                     clickResult.innerHTML = data;
                 })
@@ -81,7 +102,12 @@ function setupClickCounter() {
     if (resetButton && !resetButton.dataset.listenerAdded) {
         resetButton.addEventListener('click', function () {
             fetch('/reset_counter.py', { method: 'POST' })
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text();
+                })
                 .then(data => {
                     clickResult.innerHTML = '0';
                 })
@@ -157,7 +183,12 @@ function setupCalculator() {
         const query = `first_value=${encodeURIComponent(firstValue)}&second_value=${encodeURIComponent(secondValue)}&operator=${encodeURIComponent(operatorSymbol)}`;
 
         fetch(`/calculator.py?${query}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.error) {
                     console.error('Error:', data.error);
@@ -176,7 +207,7 @@ function setupCalculator() {
 }
 
 // 페이지 로드 시 초기 설정
-fetchNewFeedbacks(); // 페이지 로드 시 기존 피드백을 로드
+fetchNewFeedbacks();
 setupClickCounter();
 setupCalculator();
 setupFeedbackForm();
