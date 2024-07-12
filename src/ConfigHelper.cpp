@@ -188,11 +188,3 @@ std::string trim(const std::string& str) {
     return str.substr(not_space_or_tab_first,
                       not_space_or_tab_last - not_space_or_tab_first + 1);
 }
-
-int stringToInteger(const std::string& str) {
-    std::stringstream ss(str);
-    int num;
-
-    ss >> num;
-    return num;
-}

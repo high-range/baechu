@@ -14,10 +14,10 @@ bool isUtf8(const std::string& str) {
     for (std::string::size_type i = 0; i < str.size(); ++i) {
         unsigned char c = static_cast<unsigned char>(str[i]);
         if (c >= 0x80) {
-            return false;
+            return true;
         }
     }
-    return true;
+    return false;
 }
 
 std::string lower(std::string s) {
@@ -84,7 +84,7 @@ std::string loadErrorPage(int statusCode, std::string errorPagePath) {
 
     bool isDefaultErrorPage = false;
     if (isReadableFile(errorPagePath) == false) {
-        errorPagePath = currentDir + "/defence/default_error_page.html";
+        errorPagePath = currentDir + "/html/default_error_page.html";
         isDefaultErrorPage = true;
     }
 

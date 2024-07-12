@@ -44,7 +44,7 @@ Worker::Worker(const RequestData& request) : request(request) {
 std::string Worker::getFullPath(const std::string& path) {
     Configuration& config = Configuration::getInstance();
     std::string root = config.getRootDirectory(ip, port, serverName, location);
-    if (root.back() == '/') {
+    if (*(root.end() - 1) == '/') {
         root.pop_back();
     }
     return root + path;
@@ -60,7 +60,7 @@ ResponseData Worker::handleStaticRequest() {
         std::string redirectPath = redirectionInfo[1];
         Headers headers;
         headers["Location"] = redirectPath;
-        return ResponseData(std::stoi(statusCode), headers);
+        return ResponseData(stringToInteger(statusCode), headers);
     }
     if (!config.isMethodAllowedFor(ip, port, serverName, location, method)) {
         return ResponseData(405);
@@ -169,7 +169,7 @@ ResponseData Worker::doGet() {
         return ResponseData(404);
     }
 
-    if (path.back() != '/') {
+    if (*(path.end() - 1) != '/') {
         if (S_ISREG(buf.st_mode) || S_ISLNK(buf.st_mode)) {
             return doGetFile();
         } else if (S_ISDIR(buf.st_mode)) {
@@ -281,12 +281,12 @@ ResponseData Worker::handleDynamicRequest() {
 
     Headers headers;
     for (std::string line; std::getline(ss, line);) {
-        if (line.back() == '\r') {
-            line.pop_back();
-        }
-
         if (line.empty()) {
             break;
+        }
+
+        if (*(line.end() - 1) == '\r') {
+            line.pop_back();
         }
 
         size_t colonPos = line.find(':');

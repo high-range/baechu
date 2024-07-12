@@ -7,7 +7,7 @@ from datetime import datetime
 
 # 현재 작업 디렉토리 가져오기
 base_dir = subprocess.check_output(['pwd'], universal_newlines=True).strip()
-feedback_file_path = os.path.join(base_dir, 'defence', 'submit', 'feedbacks.json')
+feedback_file_path = os.path.join(base_dir, 'html', 'submit', 'feedbacks.json')
 feedback_dir = os.path.dirname(feedback_file_path)
 
 # 피드백 디렉토리가 존재하지 않으면 생성

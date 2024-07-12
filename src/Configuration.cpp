@@ -683,7 +683,7 @@ int Configuration::getDefaultPort() const {
             }
         }
     }
-    return 80;  // TODO: throw
+    return 80;
 }
 
 bool Configuration::isMethodAllowedFor(const std::string& ip,
@@ -694,7 +694,7 @@ bool Configuration::isMethodAllowedFor(const std::string& ip,
     Block server = getServerBlockWithPortAndName(ip, port, server_name);
     Block location_block = getLongestMatchingLocation(server, location);
     if (location_block.name.empty()) {
-        return false;  // TODO: throw
+        return false;
     }
 
     if (location_block.directives.find("limit_except") !=
@@ -712,7 +712,7 @@ std::vector<std::string> Configuration::getAllowedMethods(
     Block server = getServerBlockWithPortAndName(ip, port, server_name);
     Block location_block = getLongestMatchingLocation(server, location);
     if (location_block.name.empty()) {
-        return methods;  // TODO: throw
+        return methods;
     }
 
     if (location_block.directives.find("limit_except") !=

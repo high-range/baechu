@@ -105,7 +105,7 @@ long long RequestUtility::strtonum(const std::string& str) {
         return -1;
     }
     ss >> num;
-    if (str.back() == 'M') {
+    if (*(str.end() - 1) == 'M') {
         num *= 1024 * 1024;
     }
     return num;

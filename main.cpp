@@ -16,21 +16,19 @@ int main(int argc, char* argv[]) {
 
     try {
         if (argc > 2) {
-            throw "Usage: ./webserv <config_file>";
+            throw std::runtime_error("Usage: ./webserv <config_file>");
         } else if (argc == 2) {
             filename = argv[1];
         }
         config.initialize(filename);
         connector.connectServerPorts();
+    	connector.start();
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
-    } catch (const char* e) {
-        std::cerr << e << std::endl;
+		delete &config;
         return 1;
     }
 
-    connector.start();
-
+	delete &config;
     return 0;
 }

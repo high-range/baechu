@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Utils.hpp"
+
 #include <cstring>
 #include <fstream>
 #include <map>
@@ -96,7 +98,6 @@ class Configuration {
 };
 
 std::string trim(const std::string& str);
-int stringToInteger(const std::string& str);
 bool isValidFile(const std::string& file);
 bool isValidBlockName(const std::string& name);
 bool isValidDirectiveKey(const std::string& key);

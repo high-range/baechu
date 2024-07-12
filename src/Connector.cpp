@@ -145,9 +145,6 @@ void Connector::acceptConnection(struct kevent& event) {
 
         clientCount--;
     }
-    // 클라이언트 주소 정보 출력. TODO: 추후 삭제
-    // std::cout << "\nRequest came from " << inet_ntoa(clientAddr.sin_addr) <<
-    // ":" << ntohs(clientAddr.sin_port) << std::endl;
 }
 
 void Connector::handleRead(struct kevent& event) {
@@ -202,8 +199,6 @@ void Connector::handleWrite(struct kevent& event) {
 
     if (bytesSent == -1) {
         std::cerr << "Failed to send response to client" << std::endl;
-    } else if (static_cast<size_t>(bytesSent) == response.size()) {
-        std::cout << "<Connection closed>" << std::endl;
     }
     delete &response;
     close(clientFd);

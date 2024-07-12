@@ -5,7 +5,7 @@ import subprocess
 
 # 현재 작업 디렉토리 가져오기
 base_dir = subprocess.check_output(['pwd'], universal_newlines=True).strip()
-feedback_file_path = os.path.join(base_dir, 'defence', 'submit', 'feedbacks.json')
+feedback_file_path = os.path.join(base_dir, 'html', 'submit', 'feedbacks.json')
 
 print("Content-Type: application/json")
 print()
