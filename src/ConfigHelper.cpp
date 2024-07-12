@@ -195,18 +195,4 @@ int stringToInteger(const std::string& str) {
 
     ss >> num;
     return num;
-    // size_t i = 0;
-    // int result = 0;
-
-    // // Skip not a digit
-    // while (i < str.size() && !std::isdigit(str[i])) {
-    //     i++;
-    // }
-
-    // // Convert characters to integer
-    // for (; i < str.size(); i++) {
-    //     result = result * 10 + (str[i] - '0');
-    // }
-
-    // return result;
 }

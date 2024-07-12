@@ -34,7 +34,7 @@ void Configuration::parseConfigFile(const std::string& filename) {
     }
 
     std::cout << "Set \"" << filename << "\" Setting" << std::endl;
-    std::ifstream file(filename);
+    std::ifstream file(filename.c_str());
     if (!file.is_open()) {
         throw std::runtime_error("Unable to open file \"" + filename + "\"");
     }
@@ -54,10 +54,12 @@ void Configuration::parseConfigFile(const std::string& filename) {
         if (line.find("{") != std::string::npos) {
             std::string block_name = trim(line.substr(0, line.find('{')));
             if (!isValidBlockName(block_name)) {
+				file.close();
                 throw std::runtime_error("unknown directive: \"" + block_name +
                                          "\"");
             }
             if (!isValidKeyInBlock("main", block_name)) {
+				file.close();
                 throw std::runtime_error("invalid block \"" + block_name +
                                          "\" in \"main\"");
             }
@@ -66,6 +68,7 @@ void Configuration::parseConfigFile(const std::string& filename) {
             if (parseBlock(file, block)) {
                 blocks.push_back(block);
             } else {
+				file.close();
                 throw std::runtime_error("block not closed");
             }
         } else {
@@ -75,33 +78,39 @@ void Configuration::parseConfigFile(const std::string& filename) {
 
             if (line[end_pos] != ';') {
                 if (end_pos == std::string::npos) {
+					file.close();
                     throw std::runtime_error("directive should end with ';'");
                 }
             }
             if (separator_pos != std::string::npos) {
                 std::string key = trim(line.substr(0, separator_pos));
                 if (!isValidDirectiveKey(key)) {
+					file.close();
                     throw std::runtime_error("unknown directive: \"" + key +
                                              "\"");
                 }
                 std::string value = trim(line.substr(
                     separator_pos + 1, end_pos - separator_pos - 1));
                 if (value.empty()) {
+					file.close();
                     throw std::runtime_error("no value for directive \"" + key +
                                              "\"");
                 }
                 if (!isValidKeyInBlock("main", key)) {
+					file.close();
                     throw std::runtime_error(
                         "directive \"" + key +
                         "\" not allowed in block \"main\"");
                 }
                 simple_directives[key] = value;
             } else {
+				file.close();
                 throw std::runtime_error("invalid directive format in \"" +
                                          line + "\"");
             }
         }
     }
+    file.close();
 }
 
 bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
@@ -120,10 +129,12 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
         if (line.find("{") != std::string::npos) {
             std::string block_name = trim(line.substr(0, line.find('{')));
             if (!isValidBlockName(block_name)) {
+				file.close();
                 throw std::runtime_error("unknown directive: \"" + block_name +
                                          "\"");
             }
             if (!isValidKeyInBlock(current_block.name, block_name)) {
+				file.close();
                 throw std::runtime_error("invalid block \"" + block_name +
                                          "\" in \"" + current_block.name +
                                          "\"");
@@ -132,12 +143,14 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
             block.name = block_name;
             // location name 은 '/'로 끝나야함
             if (block_name.find("location ") != std::string::npos &&
-                block_name.back() != '/') {
+                block_name[block_name.length() - 1] != '/') {
+				file.close();
                 throw std::runtime_error("location name should end with '/'");
             }
             if (parseBlock(file, block)) {
                 current_block.sub_blocks.push_back(block);
             } else {
+				file.close();
                 throw std::runtime_error("block not closed");
             }
         } else if (line.find('}') != std::string::npos) {
@@ -145,7 +158,7 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
             if (openBraces == 0) {
                 return true;
             } else {
-                throw std::runtime_error("block not closed");
+				return false;
             }
         } else {
             size_t space_pos = line.find(' '), tap_pos = line.find('\t');
@@ -153,21 +166,25 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
             size_t end_pos = line.length() - 1;
 
             if (line[end_pos] != ';') {
+				file.close();
                 throw std::runtime_error("directive should end with ';'");
             }
             if (separator_pos != std::string::npos) {
                 std::string key = trim(line.substr(0, separator_pos));
                 if (!isValidDirectiveKey(key)) {
+					file.close();
                     throw std::runtime_error("unknown directive \"" + key +
                                              "\"");
                 }
                 std::string value = trim(line.substr(
                     separator_pos + 1, end_pos - separator_pos - 1));
                 if (value.empty()) {
+					file.close();
                     throw std::runtime_error("no value for directive \"" + key +
                                              "\"");
                 }
                 if (!isValidKeyInBlock(current_block.name, key)) {
+					file.close();
                     throw std::runtime_error("directive \"" + key +
                                              "\" not allowed in block \"" +
                                              current_block.name + "\"");
@@ -177,6 +194,7 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
                     if (!std::isdigit(value[0]) ||
                         (!std::isdigit(value[value.length() - 1]) &&
                          value[value.length() - 1] != 'M')) {
+						file.close();
                         throw std::runtime_error(
                             "directive \"client_max_body_size\" has invalid "
                             "value \"" +
@@ -184,6 +202,7 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
                     }
                     for (size_t i = 0; i < value.length() - 1; i++) {
                         if (!std::isdigit(value[i])) {
+							file.close();
                             throw std::runtime_error(
                                 "directive \"client_max_body_size\" has "
                                 "invalid value \"" +
@@ -192,6 +211,7 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
                     }
                 } else if (key == "listen") {
                     if (!isValidListen(value)) {
+						file.close();
                         throw std::runtime_error(
                             "directive \"listen\" has invalid value \"" +
                             value + "\"");
@@ -201,6 +221,7 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
                     std::string method;
                     while (ss >> method) {
                         if (!isValidMethods(method)) {
+							file.close();
                             throw std::runtime_error(
                                 "method only allows \"GET\", \"POST\", and "
                                 "\"DELETE\"");
@@ -216,43 +237,51 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
                     for (size_t i = 0; i < errors.size() - 1; i++) {
                         for (size_t j = 0; j < errors[i].length(); j++) {
                             if (!std::isdigit(errors[i][j])) {
+								file.close();
                                 throw std::runtime_error(
                                     "invalid statusCode \"" + errors[i] + "\"");
                             }
                         }
                         if (errors[i].size() != 3 ||
                             !(errors[i][0] >= '3' && errors[i][0] <= '5')) {
+							file.close();
                             throw std::runtime_error(
                                 "statusCode must be between 300 and 599");
                         }
                     }
                     if (errors[errors.size() - 1][0] != '/') {
+						file.close();
                         throw std::runtime_error("invalid error_page path");
                     }
                 } else if (key == "return") {
                     size_t separator_pos = value.find(' ');
                     if (separator_pos == std::string::npos) {
+						file.close();
                         throw std::runtime_error("invalid return code \"" +
                                                  value + "\"");
                     }
                     std::string status_code = value.substr(0, separator_pos);
                     if (status_code.length() > 3) {
+						file.close();
                         throw std::runtime_error("invalid return code \"" +
                                                  status_code + "\"");
                     }
                     for (size_t i = 0; i < status_code.length(); i++) {
                         if (!std::isdigit(status_code[i])) {
+							file.close();
                             throw std::runtime_error("invalid return code \"" +
                                                      status_code + "\"");
                         }
                     }
                     std::string path = value.substr(separator_pos + 1);
                     if (path.empty()) {
+						file.close();
                         throw std::runtime_error("invalid return code \"" +
                                                  value + "\"");
                     }
                 } else if (key == "autoindex") {
                     if (value != "on" && value != "off") {
+						file.close();
                         throw std::runtime_error(
                             "directive \"autoindex\" must be \"on\" or "
                             "\"off\"");
@@ -260,12 +289,14 @@ bool Configuration::parseBlock(std::ifstream& file, Block& current_block) {
                 }
                 current_block.directives[key] = value;
             } else {
+				file.close();
                 throw std::runtime_error("invalid directive format in \"" +
                                          line + "\"");
             }
         }
     }
     if (openBraces != 0) {
+		file.close();
         throw std::runtime_error("block not closed");
     }
     return true;
@@ -302,7 +333,7 @@ bool Configuration::isValidListen(const std::string& listen_value) const {
         ip = listen_value.substr(0, colon_pos);
         port = listen_value.substr(colon_pos + 1);
     } else {
-        // Check if it's a port or an ip
+        // Check port or ip
         bool is_port = true;
         for (size_t i = 0; i < listen_value.size(); ++i) {
             if (!std::isdigit(listen_value[i])) {
@@ -333,7 +364,7 @@ bool Configuration::isValidListen(const std::string& listen_value) const {
                     return false;
                 }
             }
-            int seg_value = std::atoi(segment.c_str());
+            int seg_value = stringToInteger(segment);
             if (seg_value < 0 || seg_value > 255) {
                 return false;
             }
@@ -354,7 +385,7 @@ bool Configuration::isValidListen(const std::string& listen_value) const {
                 return false;
             }
         }
-        int port_value = std::atoi(port.c_str());
+        int port_value = stringToInteger(port);
         if (port_value < 1 || port_value > 65535) {
             return false;
         }
