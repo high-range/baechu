@@ -12,9 +12,18 @@ function handleRawPostRequest(event) {
         headers: { 'Content-Type': contentType },
         body: content
     })
-        .then(response => response.text())
-        .then(data => document.getElementById('post-result-raw').innerText = 'Raw POST request successful!')
-        .catch(error => document.getElementById('post-result-raw').innerText = 'Raw POST request failed!');
+        .then(response => {
+            if (response.ok) {
+                return response.text().then(data => {
+                    document.getElementById('post-result-raw').innerText = 'Raw POST request successful!';
+                });
+            } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        })
+        .catch(error => {
+            document.getElementById('post-result-raw').innerText = `Raw POST request failed: ${error.message}`;
+        });
 }
 
 function handleBinaryPostRequest(event) {
@@ -35,9 +44,18 @@ function handleBinaryPostRequest(event) {
                 headers: { 'Content-Type': 'application/octet-stream' },
                 body: arrayBuffer
             })
-                .then(response => response.text())
-                .then(data => document.getElementById('post-result-binary').innerHTML = 'Binary POST request successful!')
-                .catch(error => document.getElementById('post-result-binary').innerText = 'Binary POST request failed!');
+                .then(response => {
+                    if (response.ok) {
+                        return response.text().then(data => {
+                            document.getElementById('post-result-binary').innerText = 'Binary POST request successful!';
+                        });
+                    } else {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('post-result-binary').innerText = `Binary POST request failed: ${error.message}`;
+                });
         };
         reader.readAsArrayBuffer(file);
     } else {
@@ -50,10 +68,14 @@ function sendDeleteRequest(url) {
         method: 'DELETE'
     })
         .then(response => {
-            return response.text().then(text => {
-                const fullResponse = `Status: ${response.status} ${response.statusText}\n\n${text}`;
-                document.getElementById('delete-result').innerText = fullResponse;
-            });
+            if (response.ok) {
+                return response.text().then(text => {
+                    const fullResponse = `Status: ${response.status} ${response.statusText}\n\n${text}`;
+                    document.getElementById('delete-result').innerText = fullResponse;
+                });
+            } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
         })
         .catch(error => {
             document.getElementById('delete-result').innerText = `Error: ${error.message}`;
@@ -77,13 +99,18 @@ function handleFileUpload(event) {
                 headers: { 'Content-Type': 'application/octet-stream' },
                 body: arrayBuffer
             })
-                .then(response => response.text())
-                .then(data => {
-                    document.getElementById('upload-result').innerText = 'File uploaded successfully!';
-                    fetchUploadedFiles(file.name);
+                .then(response => {
+                    if (response.ok) {
+                        return response.text().then(data => {
+                            document.getElementById('upload-result').innerText = 'File uploaded successfully!';
+                            fetchUploadedFiles(file.name);
+                        });
+                    } else {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
                 })
                 .catch(error => {
-                    document.getElementById('upload-result').innerText = 'File upload failed!';
+                    document.getElementById('upload-result').innerText = `File upload failed: ${error.message}`;
                 });
         };
         reader.readAsArrayBuffer(file);
@@ -108,7 +135,6 @@ function fetchUploadedFiles(filename) {
 // Initial fetch to display any existing uploaded files on page load (optional)
 // If you want to fetch and display all files initially, you can implement this function accordingly.
 document.addEventListener('DOMContentLoaded', () => fetchUploadedFiles(null));
-
 
 function copyCode(button) {
     const code = button.previousElementSibling.innerText.trim();

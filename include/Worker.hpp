@@ -60,8 +60,8 @@ class Worker {
 
     std::string runCgi();
     // used in runCgi
-    bool setupPipes(int fds[2], int inFds[2]);
-    pid_t forkAndSetupChild(int fds[2], int inFds[2]);
+    bool setupPipes(int fds[2], int inFds[2], int errFds[2]);
+    pid_t forkAndSetupChild(int fds[2], int inFds[2], int errFds[2]);
     void writeRequestBody(int inFd);
     void setupSignalHandler();
     std::string readFromChild(int fd);

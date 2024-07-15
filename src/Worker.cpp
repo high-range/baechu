@@ -321,15 +321,15 @@ ResponseData Worker::handleDynamicRequest() {
         .withReasonPhrase(reasonPhrase);
 }
 
-bool Worker::setupPipes(int fds[2], int inFds[2]) {
-    if (pipe(fds) == -1 || pipe(inFds) == -1) {
+bool Worker::setupPipes(int fds[2], int inFds[2], int errFds[2]) {
+    if (pipe(fds) == -1 || pipe(inFds) == -1 || pipe(errFds) == -1) {
         std::cerr << "pipe failed" << std::endl;
         return false;
     }
     return true;
 }
 
-pid_t Worker::forkAndSetupChild(int fds[2], int inFds[2]) {
+pid_t Worker::forkAndSetupChild(int fds[2], int inFds[2], int errFds[2]) {
     pid_t pid = fork();
     if (pid == -1) {
         std::cerr << "fork failed" << std::endl;
@@ -337,12 +337,15 @@ pid_t Worker::forkAndSetupChild(int fds[2], int inFds[2]) {
         close(fds[1]);
         close(inFds[0]);
         close(inFds[1]);
+        close(errFds[0]);
+        close(errFds[1]);
         return -1;
     }
 
     if (pid == 0) {  // child process
         close(fds[0]);
         close(inFds[1]);
+        close(errFds[0]);
 
         if (dup2(fds[1], STDOUT_FILENO) == -1) {
             std::cerr << "dup2 failed for stdout" << std::endl;
@@ -352,9 +355,14 @@ pid_t Worker::forkAndSetupChild(int fds[2], int inFds[2]) {
             std::cerr << "dup2 failed for stdin" << std::endl;
             exit(EXIT_FAILURE);
         }
+        if (dup2(errFds[1], STDERR_FILENO) == -1) {
+            std::cerr << "dup2 failed for stderr" << std::endl;
+            exit(EXIT_FAILURE);
+        }
 
         close(fds[1]);
         close(inFds[0]);
+        close(errFds[1]);
 
         CgiEnvMap envMap = createCgiEnvMap();
         char** envp = makeEnvp(envMap);
@@ -400,9 +408,12 @@ std::string Worker::readFromChild(int fd) {
         } else if (n == -1) {
             if (timeout_occurred) {
                 std::cerr << "read failed: Timeout occurred" << std::endl;
-                break;
+                close(fd);
+                return "504 Gateway Time-out";
             } else {
-                continue;
+                std::cerr << "read failed: Internal error" << std::endl;
+                close(fd);
+                return "Internal Server Error";
             }
         } else {
             break;
@@ -431,23 +442,23 @@ std::string Worker::handleTimeout(pid_t pid, int status) {
 }
 
 std::string Worker::runCgi() {
-    int fds[2], inFds[2];
-    if (!setupPipes(fds, inFds)) {
+    int fds[2], inFds[2], errFds[2];
+    if (!setupPipes(fds, inFds, errFds)) {
         return "Internal Server Error";
     }
 
-    pid_t pid = forkAndSetupChild(fds, inFds);
+    pid_t pid = forkAndSetupChild(fds, inFds, errFds);
     if (pid == -1) {
         return "Internal Server Error";
     }
 
     close(fds[1]);
     close(inFds[0]);
+    close(errFds[1]);
 
     writeRequestBody(inFds[1]);
     setupSignalHandler();
 
-    // timeout_occurred를 함수 내에서 관리
     timeout_occurred = 0;
     alarm(5);  // 5초 후에 타임아웃 발생
 
@@ -455,6 +466,10 @@ std::string Worker::runCgi() {
     std::string timeoutResult = handleTimeout(pid, 0);
     if (!timeoutResult.empty()) {
         return timeoutResult;
+    }
+    std::string stderrOutput = readFromChild(errFds[0]);
+    if (!stderrOutput.empty()) {
+        return "Internal Server Error";
     }
 
     return result;
