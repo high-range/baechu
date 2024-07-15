@@ -31,7 +31,7 @@ class Connector {
     void handleWrite(struct kevent& event);
     void handleTimer(struct kevent& event);
 
-    void setNonBlocking(int fd);
+    bool setNonBlocking(int fd);
 
     bool addWriteEvent(int fd, void* udata);
     bool addReadEvent(int fd, void* udata);

@@ -46,7 +46,9 @@ void Connector::connectServerPorts() {
             continue;
         }
 
-        setNonBlocking(serverFd);
+        if (!setNonBlocking(serverFd)) {
+            continue;
+        }
 
         sockaddr_in serverAddr;
         std::memset(&serverAddr, 0, sizeof(serverAddr));
@@ -57,7 +59,7 @@ void Connector::connectServerPorts() {
         int opt = 1;
         if (setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) ==
             -1) {
-            std::cerr << "Failed to set SO_REUSEADDR" << std::endl;
+            std::cerr << "Failed to set socket options" << std::endl;
             close(serverFd);
             continue;
         }
@@ -93,8 +95,7 @@ void Connector::start() {
         struct kevent events[MAX_EVENTS];
         int nevents = kevent(kq, NULL, 0, events, MAX_EVENTS, NULL);
         if (nevents == -1) {
-            std::cerr << "kevent failed while waiting for events" << std::endl;
-            exit(EXIT_FAILURE);
+            continue;
         }
 
         for (int i = 0; i < nevents; ++i) {
@@ -128,7 +129,7 @@ void Connector::acceptConnection(struct kevent& event) {
         int clientFd =
             accept(serverFd, (struct sockaddr*)&clientAddr, &clientAddrLen);
         if (clientFd == -1) {
-            std::cerr << "Failed to accept connection" << std::endl;
+            std::cerr << "wait...." << std::endl;
             continue;
         }
 
@@ -155,7 +156,7 @@ void Connector::handleRead(struct kevent& event) {
     char buffer[BUFFER_SIZE];
 
     try {
-        if (event.flags)
+        if (event.flags) {
             while (readSize > 0) {
                 std::memset(buffer, 0, sizeof(buffer));  // 버퍼 초기화
                 int bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
@@ -165,6 +166,7 @@ void Connector::handleRead(struct kevent& event) {
                 request.append(buffer, bytesRead);
                 readSize -= bytesRead;
             }
+        }
 
         requestData.appendData(request);
 
@@ -215,13 +217,15 @@ void Connector::handleTimer(struct kevent& event) {
     addWriteEvent(clientFd, response);
 }
 
-void Connector::setNonBlocking(int fd) {
+bool Connector::setNonBlocking(int fd) {
     int flags = fcntl(fd, F_GETFL, 0);
 
     if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
         std::cerr << "Failed to set non-blocking" << std::endl;
-        exit(EXIT_FAILURE);
+        close(fd);
+        return false;
     }
+    return true;
 }
 
 bool Connector::addWriteEvent(int fd, void* udata) {
