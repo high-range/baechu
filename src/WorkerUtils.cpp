@@ -10,16 +10,6 @@
 #include "Utils.hpp"
 #include "Worker.hpp"
 
-bool isUtf8(const std::string& str) {
-    for (std::string::size_type i = 0; i < str.size(); ++i) {
-        unsigned char c = static_cast<unsigned char>(str[i]);
-        if (c >= 0x80) {
-            return true;
-        }
-    }
-    return false;
-}
-
 std::string lower(std::string s) {
     for (size_t i = 0; i < s.length(); i++) {
         if (isupper(s[i])) {

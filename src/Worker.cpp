@@ -200,11 +200,6 @@ ResponseData Worker::doGet() {
 }
 
 ResponseData Worker::doPost() {
-    if (isUtf8(fullPath)) {
-        std::cerr << "Non-ASCII characters in the file path. Korean is not supported." << std::endl;
-        return ResponseData(400);
-    }
-
     struct stat buf;
     if (stat(fullPath.c_str(), &buf) == 0) {
         if (S_ISDIR(buf.st_mode)) {

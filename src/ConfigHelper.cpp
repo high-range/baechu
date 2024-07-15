@@ -163,7 +163,7 @@ bool isValidMethods(const std::string& method) {
 }
 
 bool isValidFile(const std::string& file) {
-    if (file.length() < 5) {
+    if (file.length() <= 5) {
         return false;
     }
     if (file.substr(file.length() - 5) != ".conf") {

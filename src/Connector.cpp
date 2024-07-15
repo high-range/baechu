@@ -161,7 +161,7 @@ void Connector::handleRead(struct kevent& event) {
                 std::memset(buffer, 0, sizeof(buffer));  // 버퍼 초기화
                 int bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
                 if (bytesRead < 0) {
-                    throw ResponseData(400);
+                    throw ResponseData(500);
                 }
                 request.append(buffer, bytesRead);
                 readSize -= bytesRead;
